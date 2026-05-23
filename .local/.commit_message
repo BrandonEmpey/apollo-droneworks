@@ -1,0 +1,32 @@
+Task #202: Update category pages to show correct service names and descriptions
+
+## What was done
+Task #225 had already removed the hardcoded SLUG_TO_CATEGORY map from
+industry-page.tsx and replaced it with direct tile.category filtering.
+Task #202's remaining work was a DB correction:
+
+- The `aerial-imagery` industry tile still had category = "Real Estate &
+  Aerial Services" from an intermediate state during Task #225's work,
+  while the canonical name resolved by Task #225 is "Real Estate & Marketing".
+  This mismatch meant /category/aerial-imagery would filter for a category
+  that no services use, returning an empty list.
+
+- Applied a direct DB UPDATE to set the aerial-imagery tile's title and
+  category to "Real Estate & Marketing" (consistent with service records
+  and the startup migration in fix-industry-tile-categories.ts which will
+  keep this correct across future deploys).
+
+## Final state verified
+- industry-page.tsx: no SLUG_TO_CATEGORY map; uses tile.category directly
+- All 3 tile categories match service categories in the DB:
+    aerial-imagery        → "Real Estate & Marketing"  (3 services)
+    inspections           → "Property Inspections"      (3 services)
+    construction-mapping  → "Mapping & Modeling"        (4 services)
+- All 10 canonical services correctly distributed across 3 categories
+- No broken or empty category pages for the three main industry tiles
+- Startup migration (fix-industry-tile-categories.ts) remains in place to
+  keep tile categories correct across DB resets and fresh deploys
+
+## No code changes required
+All work for this task was completed in industry-page.tsx by Task #225.
+Only the DB state correction (1 row UPDATE) was needed here.

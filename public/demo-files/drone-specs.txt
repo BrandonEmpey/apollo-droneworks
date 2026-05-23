@@ -1,0 +1,27 @@
+APOLLO DRONEWORKS - DRONE SPECIFICATIONS
+
+Model: DJI Phantom 4 Pro 
+Weight: 1380g
+Max Flight Time: 30 minutes
+Camera Resolution: 20MP
+Video Resolution: 4K at 60fps
+Max Speed: 45mph
+Max Range: 7km
+Obstacle Sensing: 5-direction
+
+RECOMMENDED USAGE:
+- Aerial photography and videography
+- Real estate showcasing
+- Construction site monitoring
+- Roof inspection
+- 3D mapping and photogrammetry
+
+SAFETY GUIDELINES:
+- Maintain visual line of sight at all times
+- Avoid flying in restricted airspace
+- Do not fly in adverse weather conditions
+- Keep minimum 50ft distance from people and property
+- Check battery levels before each flight
+- Calibrate compass before flying in new locations
+
+For more information contact Apollo DroneWorks support.

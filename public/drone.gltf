@@ -1,0 +1,91 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Apollo DroneWorks Test Model"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Simple Drone",
+      "mesh": 0,
+      "rotation": [0, 0, 0, 1],
+      "scale": [1, 1, 1],
+      "translation": [0, 0, 0]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "DroneBody",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1
+          },
+          "indices": 2,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "DroneBodyMaterial",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [0.8, 0.8, 0.8, 1.0],
+        "metallicFactor": 0.5,
+        "roughnessFactor": 0.5
+      }
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 24,
+      "type": "VEC3",
+      "max": [1.0, 0.5, 1.0],
+      "min": [-1.0, -0.5, -1.0]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5126,
+      "count": 24,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5123,
+      "count": 36,
+      "type": "SCALAR"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteLength": 288,
+      "byteOffset": 0
+    },
+    {
+      "buffer": 0,
+      "byteLength": 288,
+      "byteOffset": 288
+    },
+    {
+      "buffer": 0,
+      "byteLength": 72,
+      "byteOffset": 576
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 648,
+      "uri": "data:application/octet-stream;base64,AACAvwAAAL8AAIC/AACAvwAAAL8AAIA/AACAvwAAAD8AAIA/AACAvwAAAD8AAIC/AACAvwAAAL8AAIC/AACAPwAAAL8AAIC/AACAPwAAAL8AAIA/AACAvwAAAL8AAIA/AACAPwAAAL8AAIC/AACAPwAAAD8AAIC/AACAPwAAAD8AAIA/AACAPwAAAL8AAIA/AACAPwAAAD8AAIC/AACAvwAAAD8AAIC/AACAvwAAAD8AAIA/AACAPwAAAD8AAIA/AACAvwAAAL8AAIC/AACAvwAAAD8AAIC/AACAPwAAAD8AAIC/AACAPwAAAL8AAIC/AACAvwAAAL8AAIA/AACAPwAAAL8AAIA/AACAPwAAAD8AAIA/AACAvwAAAD8AAIA/AAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAgL8AAACAAAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AAAAAAAAAAAAAIC/AACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAACAPwAAAAAAAACAAAAAAAAAgD8AAACAAAAAAAAAgD8AAACAAAAAAAAAgD8AAACAAAAAAAAAgD8AAACAAACAvwAAAAAAAACAAACAvwAAAAAAAACAAACAvwAAAAAAAACAAACAvwAAAAAAAACAAAAAAAAAAAAAgD8AAACAAAAAAAAAgD8AAACAAAAAAAAAgD8AAACAAAAAAAAAgD8AAACAAQADAAIAAgADAAQACQALAAoACgALAAwABQAHAAYABgAHAAgADQAPAA4ADgAPABAAEQATABIAEgATABQAFQAXABYAFgAXABgA"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Progress - Week 4</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        .tour-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(45deg, #2c5530, #1e3a23);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .panorama-viewer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: grab;
+            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwMCIgaGVpZ2h0PSI1MDAiIHZpZXdCb3g9IjAgMCAxMDAwIDUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ic2t5R3JhZGllbnQiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMCUiIHkyPSIxMDAlIj4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6Izg3Q0VFQjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSI1MCUiIHN0eWxlPSJzdG9wLWNvbG9yOiNBRERERkY7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6Izg3Q0VFQjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgogIDxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjUwMCIgZmlsbD0idXJsKCNza3lHcmFkaWVudCkiLz4KICA8IS0tIENvbnN0cnVjdGlvbiBzaXRlIGVsZW1lbnRzIC0tPgogIDxyZWN0IHg9IjEwMCIgeT0iMzAwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iIzY2NjY2NiIgc3Ryb2tlPSIjNDQ0NDQ0IiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cmVjdCB4PSIzNTAiIHk9IjI1MCIgd2lkdGg9IjMwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiM4ODg4ODgiIHN0cm9rZT0iIzU1NTU1NSIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHJlY3QgeD0iNzAwIiB5PSIzMjAiIHdpZHRoPSIxNTAiIGhlaWdodD0iMTMwIiBmaWxsPSIjNzc3Nzc3IiBzdHJva2U9IiM0NDQ0NDQiIHN0cm9rZS13aWR0aD0iMiIvPgogIDx0ZXh0IHg9IjUwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMzMzMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPkNvbnN0cnVjdGlvbiBTaXRlIC0gV2VlayA0PC90ZXh0Pgo8L3N2Zz4K') center/cover;
+        }
+        .panorama-viewer:active {
+            cursor: grabbing;
+        }
+        .hotspot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ffdd33;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.8; }
+        }
+        .hotspot-1 { top: 30%; left: 25%; }
+        .hotspot-2 { top: 45%; left: 60%; }
+        .hotspot-3 { top: 35%; left: 80%; }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        .control-btn {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .control-btn:hover {
+            background: rgba(0,0,0,0.9);
+        }
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            max-width: 300px;
+        }
+        .hotspot-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="tour-container">
+        <div class="panorama-viewer" id="panoramaViewer">
+            <div class="hotspot hotspot-1" data-info="Foundation completed - reinforced concrete with steel rebar grid"></div>
+            <div class="hotspot hotspot-2" data-info="Framing progress - 60% complete, walls and roof structure"></div>
+            <div class="hotspot hotspot-3" data-info="Electrical rough-in started - conduit installation"></div>
+        </div>
+        
+        <div class="info-panel">
+            <h3 style="margin: 0 0 10px 0; color: #ffdd33;">Construction Progress Tour</h3>
+            <p style="margin: 0; font-size: 14px; line-height: 1.4;">
+                Week 4 Progress: Foundation complete, framing 60% done, electrical rough-in started.
+                Click on the yellow hotspots to view detailed information about each area.
+            </p>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn" onclick="resetView()">Reset View</button>
+            <button class="control-btn" onclick="toggleFullscreen()">Fullscreen</button>
+            <button class="control-btn" onclick="showMeasurements()">Measurements</button>
+        </div>
+        
+        <div class="hotspot-tooltip" id="tooltip"></div>
+    </div>
+
+    <script>
+        let isDragging = false;
+        let currentRotation = 0;
+        
+        const viewer = document.getElementById('panoramaViewer');
+        const tooltip = document.getElementById('tooltip');
+        
+        // Mouse drag functionality for panorama rotation
+        viewer.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            viewer.style.cursor = 'grabbing';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                currentRotation += e.movementX * 0.5;
+                viewer.style.transform = `rotateY(${currentRotation}deg)`;
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            viewer.style.cursor = 'grab';
+        });
+        
+        // Hotspot interactions
+        document.querySelectorAll('.hotspot').forEach(hotspot => {
+            hotspot.addEventListener('mouseenter', (e) => {
+                const info = e.target.dataset.info;
+                tooltip.textContent = info;
+                tooltip.style.opacity = '1';
+            });
+            
+            hotspot.addEventListener('mousemove', (e) => {
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY - 10 + 'px';
+            });
+            
+            hotspot.addEventListener('mouseleave', () => {
+                tooltip.style.opacity = '0';
+            });
+            
+            hotspot.addEventListener('click', (e) => {
+                const info = e.target.dataset.info;
+                alert('Detailed View: ' + info);
+            });
+        });
+        
+        function resetView() {
+            currentRotation = 0;
+            viewer.style.transform = 'rotateY(0deg)';
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function showMeasurements() {
+            alert('Measurement Tool: Foundation: 40ft x 60ft, Wall Height: 12ft, Total Area: 2,400 sq ft');
+        }
+    </script>
+</body>
+</html>

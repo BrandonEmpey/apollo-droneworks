@@ -1,0 +1,1173 @@
+@import './styles/logo-colors.css';
+@import './styles/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme CSS Custom Properties */
+:root {
+  /* Default to dark mode */
+  --bg-primary: #0b111f;
+  --bg-secondary: #1a2332;
+  --bg-card: #1a2332;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: rgba(248, 250, 252, 0.7);
+  --border-color: rgba(255, 255, 255, 0.5);
+  --gold-gradient: linear-gradient(135deg, #ffd700 0%, #ffa500 50%, #ff8c00 100%);
+  --gold-default: #ffd700;
+  --gold-light: #ffed4a;
+}
+
+/* Apollo DroneWorks custom styling */
+.text-gold-gradient {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-gold-gradient {
+  background: var(--gold-gradient);
+}
+
+/* Perfect circle enforcement using multiple methods */
+.carousel-nav-button {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  clip-path: circle(50%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  /* Enhanced visibility on light backgrounds */
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.carousel-nav-button:hover {
+  background: rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    0 3px 8px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+.carousel-page-marker {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  clip-path: circle(50%) !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  flex-shrink: 0 !important;
+  /* Enhanced visibility on light backgrounds */
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.4),
+    0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Carousel dots container with enhanced backdrop */
+.carousel-dots-container {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  padding: 6px 12px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+  display: inline-flex !important;
+}
+
+/* Theme-aware utility classes */
+.bg-theme-primary {
+  background-color: var(--bg-primary);
+}
+
+.bg-theme-secondary {
+  background-color: var(--bg-secondary);
+}
+
+.bg-theme-card {
+  background-color: var(--bg-card);
+}
+
+.text-theme-primary {
+  color: var(--text-primary);
+}
+
+.text-theme-secondary {
+  color: var(--text-secondary);
+}
+
+.text-theme-muted {
+  color: var(--text-muted);
+}
+
+.border-theme {
+  border-color: var(--border-color);
+}
+
+.gold-text {
+  color: var(--gold-default);
+}
+
+.text-gold-light {
+  color: var(--gold-light);
+}
+
+/* Interactive Package Card Styles */
+.package-card {
+  position: relative;
+  background: #0b111f;
+  border: 2px solid rgba(100, 100, 100, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.package-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, var(--gold-start) 0%, var(--gold-middle) 50%, var(--gold-end) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.package-card:hover::before {
+  opacity: 1;
+  animation: border-radiate 0.6s ease-out;
+}
+
+.package-card:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 20px rgba(199, 174, 106, 0.4);
+}
+
+.package-card:active::before {
+  opacity: 1;
+}
+
+.package-card.selected::before {
+  opacity: 1;
+}
+
+.package-card.selected {
+  box-shadow: 0 0 20px rgba(199, 174, 106, 0.3);
+}
+
+@keyframes border-radiate {
+  0% {
+    opacity: 0;
+    clip-path: polygon(0% 0%, 10% 0%, 10% 10%, 0% 10%, 0% 90%, 10% 90%, 10% 100%, 0% 100%, 90% 100%, 90% 90%, 100% 90%, 100% 100%, 100% 0%, 90% 0%, 90% 10%, 100% 10%);
+  }
+  50% {
+    clip-path: polygon(0% 0%, 50% 0%, 50% 0%, 0% 0%, 0% 100%, 50% 100%, 50% 100%, 0% 100%, 100% 100%, 100% 100%, 100% 50%, 100% 100%, 100% 0%, 100% 0%, 100% 50%, 100% 0%);
+  }
+  100% {
+    opacity: 1;
+    clip-path: polygon(0% 0%, 100% 0%, 100% 0%, 0% 0%, 0% 100%, 100% 100%, 100% 100%, 0% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 0%, 100% 0%, 100% 0%, 100% 0%);
+  }
+}
+
+/* Gold gradient for checkmarks in packages */
+.check-gold-gradient {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gold gradient border for Most Popular tag */
+.popular-badge {
+  position: relative;
+  background: linear-gradient(135deg, var(--gold-start) 0%, var(--gold-middle) 50%, var(--gold-end) 100%);
+  border: none;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-weight: 600;
+  color: #0b111f;
+  box-shadow: 0 4px 12px rgba(199, 174, 106, 0.3);
+}
+
+/* Reusable Interactive Card with Gold Border Hover Effect */
+.interactive-card {
+  position: relative;
+  border: 1px solid rgba(100, 100, 100, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.interactive-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--gold-start) 0%, var(--gold-middle) 50%, var(--gold-end) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.interactive-card:hover::before {
+  opacity: 1;
+  animation: border-radiate 0.6s ease-out;
+}
+
+.interactive-card.selected::before,
+.interactive-card.bundleable::before {
+  opacity: 1;
+}
+
+.interactive-card.selected,
+.interactive-card.bundleable {
+  box-shadow: 0 0 15px rgba(199, 174, 106, 0.25);
+}
+
+/* Service selection card variant (smaller padding for inline cards) */
+.service-select-card {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.service-select-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--gold-start) 0%, var(--gold-middle) 50%, var(--gold-end) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.service-select-card:hover::before {
+  opacity: 1;
+  animation: border-radiate 0.6s ease-out;
+}
+
+.service-select-card.selected::before {
+  opacity: 1;
+}
+
+.service-select-card.selected {
+  background: rgba(199, 174, 106, 0.05);
+  box-shadow: 0 0 15px rgba(199, 174, 106, 0.25);
+}
+
+.service-select-card.bundleable::before {
+  opacity: 1;
+}
+
+.service-select-card.bundleable {
+  box-shadow: 0 0 12px rgba(199, 174, 106, 0.2);
+}
+
+/* Custom styling for file viewers */
+.custom-div-icon {
+  background: none !important;
+  border: none !important;
+}
+
+/* Fix for Leaflet map controls */
+.leaflet-touch .leaflet-control-layers, 
+.leaflet-touch .leaflet-bar {
+  border: 2px solid rgba(199, 174, 106, 0.5) !important;
+  background-clip: padding-box;
+}
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+  background-color: #1d1d1d !important;
+  color: #fff !important;
+}
+
+.leaflet-control-zoom-in:hover,
+.leaflet-control-zoom-out:hover {
+  background-color: #080d17 !important;
+  color: #c7ae6a !important;
+}
+
+/* Custom styling for konva elements */
+.konvajs-content {
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+/* Custom popup styling */
+.leaflet-popup-content-wrapper {
+  background-color: #132642 !important;
+  color: white !important;
+  border: 1px solid rgba(199, 174, 106, 0.3);
+}
+
+.leaflet-popup-tip {
+  background-color: #132642 !important;
+  border: 1px solid rgba(199, 174, 106, 0.3);
+}
+
+/* Additional custom styles */
+.overhead-input {
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+/* Remove number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+@layer components {
+  /* Fix text color on white background inputs */
+  .bg-white input, 
+  input.bg-white,
+  .bg-background input[type="text"],
+  .bg-background input[type="email"],
+  .bg-background input[type="password"],
+  .bg-background input[type="number"],
+  .bg-background input[type="date"],
+  .bg-background input[type="tel"],
+  .bg-background textarea,
+  .bg-background select {
+    @apply text-black;
+  }
+  
+  /* Fix Stripe input field text color */
+  .StripeElement {
+    color: #000000 !important;
+  }
+
+  /* Specific form elements in checkout and auth pages */
+  .checkout-form input,
+  .payment-form input,
+  form input[type],
+  [role="tabpanel"] input {
+    @apply text-white;
+  }
+  
+  /* Ensure white background inputs have black text */
+  form input.bg-white,
+  form input[type].bg-white,
+  .bg-white input[type] {
+    @apply text-black;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 217 59% 8%;
+    --foreground: 210 40% 98%;
+
+    --muted: 217 45% 11%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --popover: 217 59% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --border: 217 45% 11%;
+    --input: 217 45% 11%;
+
+    --card: 217 59% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --primary: 46 45% 58%;
+    --primary-foreground: 217 59% 8%;
+
+    --secondary: 217 45% 11%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 217 45% 11%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+
+    --ring: 217 45% 11%;
+
+    /* Chart colors */
+    --chart-1: 46 45% 58%;
+    --chart-2: 25 95% 53%;
+    --chart-3: 262 83% 58%;
+    --chart-4: 170 57% 49%;
+    --chart-5: 210 100% 66%;
+
+    /* Sidebar colors */
+    --sidebar-background: 217 59% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 46 45% 58%;
+    --sidebar-primary-foreground: 217 59% 8%;
+    --sidebar-accent: 217 45% 11%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 45% 11%;
+    --sidebar-ring: 217 45% 11%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom styles */
+.gold-text {
+  background: linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-shadow {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.font-montserrat {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.font-opensans {
+  font-family: 'Open Sans', sans-serif;
+}
+
+/* Gold gradient border utility */
+.border-gold {
+  border-image: linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end)) 1;
+}
+
+/* Define custom color variables */
+:root {
+  --gold-gradient: linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end));
+  --black-gradient: linear-gradient(to bottom, #080d17, #0b111f, #142642);
+  
+  /* Base colors */
+  --gold-light: var(--gold-middle);
+  --gold: var(--gold-start);
+  --gold-dark: var(--gold-end);
+  
+  --black-light: #1f1f1f;
+  --black: #0b111f;
+  --black-dark: #080d17;
+  
+  --offwhite: #F5F5F5;
+}
+
+/* Auth form specific styles */
+.auth-input {
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF !important;
+  caret-color: #d5c28f !important;
+}
+
+/* Force input text color globally in auth page */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #FFFFFF !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0b111f inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Direct targeting for input elements */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+textarea {
+  color: #FFFFFF !important;
+}
+
+/* Global Button Styling */
+.btn-primary {
+  background-color: #1d1d1d;
+  color: #F5F5F5;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gold-gradient);
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.btn-primary:hover::before {
+  opacity: 1;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1d1d1d;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.btn-primary:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(199, 174, 106, 0.5);
+}
+
+/* Gold button variant (now uses 1d1d1d background) */
+.btn-gold {
+  background-color: #1d1d1d;
+  color: #F5F5F5;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-gold::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gold-gradient);
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.btn-gold:hover::before {
+  opacity: 1;
+}
+
+.btn-gold::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1d1d1d;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.btn-gold:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(199, 174, 106, 0.5);
+}
+
+/* Dark button variant */
+.btn-dark {
+  background-color: #1d1d1d;
+  color: #F5F5F5;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-dark::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gold-gradient);
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.btn-dark:hover::before {
+  opacity: 1;
+}
+
+.btn-dark::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1d1d1d;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.btn-dark:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(199, 174, 106, 0.5);
+}
+
+/* Blog Post Styles */
+.prose-gold {
+  color: var(--offwhite);
+}
+
+.prose-gold h1,
+.prose-gold h2,
+.prose-gold h3,
+.prose-gold h4,
+.prose-gold h5,
+.prose-gold h6 {
+  color: var(--gold-light);
+  font-family: 'Montserrat', sans-serif;
+  margin-top: 2em;
+  margin-bottom: 0.75em;
+  font-weight: 600;
+}
+
+.prose-gold h1 {
+  font-size: 2.5rem;
+}
+
+.prose-gold h2 {
+  font-size: 1.875rem;
+  border-bottom: 1px solid rgba(199, 174, 106, 0.2);
+  padding-bottom: 0.5rem;
+}
+
+.prose-gold h3 {
+  font-size: 1.5rem;
+}
+
+.prose-gold p {
+  margin-bottom: 1.5em;
+  line-height: 1.75;
+}
+
+.prose-gold a {
+  color: var(--gold-light);
+  text-decoration: none;
+}
+
+.prose-gold a:hover {
+  text-decoration: underline;
+}
+
+.prose-gold ul, 
+.prose-gold ol {
+  margin-top: 1.25em;
+  margin-bottom: 1.25em;
+  padding-left: 1.5em;
+}
+
+.prose-gold li {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  position: relative;
+}
+
+.prose-gold ul li::before {
+  content: "";
+  position: absolute;
+  width: 0.375em;
+  height: 0.375em;
+  background-color: var(--gold-light);
+  border-radius: 50%;
+  left: -1.25em;
+  top: 0.5em;
+}
+
+.prose-gold ol {
+  counter-reset: list-counter;
+}
+
+.prose-gold ol li {
+  counter-increment: list-counter;
+}
+
+.prose-gold ol li::before {
+  content: counter(list-counter) ".";
+  position: absolute;
+  font-weight: 500;
+  color: var(--gold-light);
+  left: -1.5em;
+  top: 0;
+}
+
+.prose-gold blockquote {
+  font-style: italic;
+  border-left: 3px solid var(--gold-light);
+  padding-left: 1.5em;
+  margin-left: 0;
+  margin-right: 0;
+  background-color: rgba(19, 38, 66, 0.3);
+  padding: 1rem 1.5rem;
+  border-radius: 0.25rem;
+}
+
+.prose-gold img {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(199, 174, 106, 0.2);
+  max-width: 100%;
+  margin: 2rem auto;
+}
+
+.prose-gold strong {
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.prose-gold code {
+  background-color: #132642;
+  border-radius: 0.25rem;
+  padding: 0.2em 0.4em;
+  font-size: 0.875em;
+  font-family: monospace;
+}
+
+.prose-gold pre {
+  background-color: #132642;
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border: 1px solid rgba(199, 174, 106, 0.2);
+}
+
+.prose-gold pre code {
+  background-color: transparent;
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--offwhite);
+}
+
+/* Dark button variant */
+.btn-dark {
+  background-color: #1d1d1d;
+  color: #F5F5F5;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-dark::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gold-gradient);
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.btn-dark:hover::before {
+  opacity: 1;
+}
+
+.btn-dark::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1d1d1d;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.btn-dark:hover {
+  color: #F5F5F5;
+  transform: scale(1.02);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Gold gradient text class */
+.text-gold-gradient {
+  background: linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Package border styling */
+.border-gold-gradient {
+  border: 2px solid;
+  border-image: linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end)) 1;
+}
+
+/* Transparent Chart Tooltips */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: rgba(11, 17, 31, 0.8) !important;
+  border: 1px solid rgba(199, 174, 106, 0.3) !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label {
+  color: var(--gold-light) !important;
+  font-weight: 500 !important;
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-list {
+  background: transparent !important;
+}
+
+.recharts-tooltip-cursor {
+  fill-opacity: 0.1 !important;
+}
+
+/* Newly added animation classes for micro-interactions */
+
+/* Apollo specific button animation */
+.btn-apollo {
+  @apply bg-[#1d1d1d] text-white relative overflow-hidden transition-all duration-300 ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-apollo::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: var(--gold-gradient);
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.btn-apollo:hover::before {
+  opacity: 1;
+}
+
+.btn-apollo::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #1d1d1d;
+  z-index: -1;
+  border-radius: inherit;
+}
+
+.btn-apollo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(199, 174, 106, 0.3);
+}
+
+.btn-apollo:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(199, 174, 106, 0.2);
+}
+
+/* Text gradient animation */
+.text-gold-gradient {
+  background: linear-gradient(
+    90deg,
+    var(--gold-start),
+    var(--gold-middle),
+    var(--gold-end),
+    var(--gold-middle),
+    var(--gold-start)
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: textShimmer 8s infinite linear;
+}
+
+@keyframes textShimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Card hover animation */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.card-hover:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+/* Input focus effect */
+.input-focus-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.input-focus-effect::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--gold-gradient);
+  transition: width 0.3s ease;
+}
+
+.input-focus-effect:focus-within::after {
+  width: 100%;
+}
+
+/* Nav item hover underline animation */
+.nav-item {
+  position: relative;
+}
+
+.nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--gold-gradient);
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.nav-item:hover::after,
+.nav-item.active::after {
+  width: 80%;
+}
+
+/* Toast animations */
+.toast-enter {
+  animation: toastIn 0.3s cubic-bezier(0.21, 1.02, 0.73, 1);
+}
+
+.toast-exit {
+  animation: toastOut 0.3s cubic-bezier(0.06, 0.71, 0.55, 1);
+}
+
+@keyframes toastIn {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toastOut {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+}
+
+/* Subtle background animation for sections */
+.subtle-bg-animation {
+  position: relative;
+  overflow: hidden;
+}
+
+.subtle-bg-animation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(199, 174, 106, 0.05), transparent 70%);
+  opacity: 0;
+  transition: opacity 1s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.subtle-bg-animation:hover::before {
+  opacity: 1;
+}
+
+/* Background gradient animation for page */
+.bg-apollo-gradient {
+  background: linear-gradient(135deg, #080d17, #0b111f, #132642, #0b111f, #080d17);
+  background-size: 400% 400%;
+  animation: gradientBG 30s ease infinite;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Time-based color shifts */
+.day-mode {
+  --background-intensity: 1;
+  --text-brightness: 0.9;
+}
+
+.night-mode {
+  --background-intensity: 0.8;
+  --text-brightness: 1;
+}
+
+.transition-mode {
+  --background-intensity: 0.9;
+  --text-brightness: 0.95;
+}
+
+.daytime-color-shift {
+  transition: all 1s ease;
+}
+
+.daytime-color-shift.day-mode {
+  --gold-shift: 1.05;
+}
+
+.daytime-color-shift.night-mode {
+  --gold-shift: 0.85;
+}
+
+.daytime-color-shift.transition-mode {
+  --gold-shift: 1;
+}
+
+/* Bundleable service card - animated growing gold gradient border */
+.bundleable-service {
+  position: relative;
+  background: transparent;
+  z-index: 0;
+}
+
+.bundleable-service::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #a8860c, #d4a91a, #f0c940, #d4a91a, #a8860c);
+  background-size: 300% 300%;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  animation: borderGrow 0.6s ease-out forwards, shimmer 3s ease-in-out infinite;
+}
+
+.bundleable-service::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0b111f;
+  border-radius: calc(0.5rem - 2px);
+  z-index: -1;
+}
+
+@keyframes borderGrow {
+  0% {
+    opacity: 0;
+    clip-path: polygon(0 0, 0 0, 0 0, 0 0);
+  }
+  20% {
+    opacity: 1;
+    clip-path: polygon(0 0, 50% 0, 50% 0, 0 0);
+  }
+  40% {
+    clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+  }
+  60% {
+    clip-path: polygon(0 0, 100% 0, 100% 50%, 0 0);
+  }
+  80% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 50%);
+  }
+  100% {
+    opacity: 1;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

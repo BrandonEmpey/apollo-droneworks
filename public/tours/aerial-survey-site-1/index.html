@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aerial Survey - Site Inspection</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+        }
+        .survey-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: linear-gradient(135deg, #2c4f6b, #1e3a4f);
+        }
+        .orthomosaic-viewer {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            cursor: grab;
+            background: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI4MDAiIHZpZXdCb3g9IjAgMCAxMjAwIDgwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8ZGVmcz4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0iZ3JhZGllbnQiIGN4PSI1MCUiIGN5PSI1MCUiIHI9IjUwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM4Q0Q5ODI7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMzAlIiBzdHlsZT0ic3RvcC1jb2xvcjojNkJBNTYzO3N0b3Atb3BhY2l0eToxIiAvPgogICAgICA8c3RvcCBvZmZzZXQ9IjcwJSIgc3R5bGU9InN0b3AtY29sb3I6IzQzNzM0MjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMkE0OTJCO3N0b3Atb3BhY2l0eToxIiAvPgogICAgPC9yYWRpYWxHcmFkaWVudD4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9IjEyMDAiIGhlaWdodD0iODAwIiBmaWxsPSJ1cmwoI2dyYWRpZW50KSIvPgogIDwhLS0gRmllbGQgcGF0dGVybnMgLS0+CiAgPHJlY3QgeD0iMTAwIiB5PSIxMDAiIHdpZHRoPSIyMDAiIGhlaWdodD0iMTUwIiBmaWxsPSIjNDU3MzQyIiBzdHJva2U9IiMzMzQ0MzMiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjM1MCIgeT0iMTUwIiB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iIzU2ODQ1NCIgc3Ryb2tlPSIjMzM0NDMzIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cmVjdCB4PSI3MDAiIHk9IjEwMCIgd2lkdGg9IjI1MCIgaGVpZ2h0PSIxODAiIGZpbGw9IiM0NTczNDIiIHN0cm9rZT0iIzMzNDQzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPHJlY3QgeD0iMTUwIiB5PSI0MDAiIHdpZHRoPSIxODAiIGhlaWdodD0iMTIwIiBmaWxsPSIjNjc5NTY1IiBzdHJva2U9IiMzMzQ0MzMiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxyZWN0IHg9IjQwMCIgeT0iNDUwIiB3aWR0aD0iMjIwIiBoZWlnaHQ9IjE0MCIgZmlsbD0iIzU2ODQ1NCIgc3Ryb2tlPSIjMzM0NDMzIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8cmVjdCB4PSI3NTAiIHk9IjM4MCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIxNjAiIGZpbGw9IiM0NTczNDIiIHN0cm9rZT0iIzMzNDQzMyIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPCEtLSBSb2FkcyAtLT4KICA8cGF0aCBkPSJNIDUwIDUwIEwgMTEwMCA1MCBMIDExMDAgNzUgTCA1MCA3NSBaIiBmaWxsPSIjNTU1NTU1IiBzdHJva2U9IiMzMzMzMzMiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxwYXRoIGQ9Ik0gNTAwIDUwIEwgNTAwIDcwMCBMIDUyNSA3MDAgTCA1MjUgNTAgWiIgZmlsbD0iIzU1NTU1NSIgc3Ryb2tlPSIjMzMzMzMzIiBzdHJva2Utd2lkdGg9IjEiLz4KICA8dGV4dCB4PSI2MDAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjAiIGZpbGw9IiMzMzMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk9ydGhvbW9zYWljIFN1cnZleSAtIDEyNSBBY3JlczwvdGV4dD4KPC9zdmc+Cg==') center/cover;
+            transition: transform 0.3s ease;
+        }
+        .orthomosaic-viewer:active {
+            cursor: grabbing;
+        }
+        .measurement-point {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            animation: ping 3s infinite;
+        }
+        @keyframes ping {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.9; }
+        }
+        .point-1 { top: 20%; left: 15%; }
+        .point-2 { top: 25%; left: 45%; }
+        .point-3 { top: 30%; left: 75%; }
+        .point-4 { top: 55%; left: 25%; }
+        .point-5 { top: 60%; left: 60%; }
+        .point-6 { top: 65%; left: 85%; }
+        .survey-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .survey-btn {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 140px;
+        }
+        .survey-btn:hover {
+            background: rgba(0,0,0,0.95);
+        }
+        .survey-btn.active {
+            background: #ffdd33;
+            color: #000;
+        }
+        .info-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.85);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+        }
+        .measurement-tooltip {
+            position: absolute;
+            background: rgba(255, 107, 107, 0.95);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .layer-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 8px;
+            min-width: 200px;
+        }
+        .layer-option {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+        .layer-option input {
+            margin-right: 8px;
+        }
+        .zoom-controls {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="survey-container">
+        <div class="orthomosaic-viewer" id="orthomosaicViewer">
+            <div class="measurement-point point-1" data-area="Field A: 25.7 acres" data-coords="38°46'12.3&quot;N 109°32'45.1&quot;W"></div>
+            <div class="measurement-point point-2" data-area="Field B: 18.4 acres" data-coords="38°46'10.8&quot;N 109°32'42.5&quot;W"></div>
+            <div class="measurement-point point-3" data-area="Field C: 31.2 acres" data-coords="38°46'09.2&quot;N 109°32'39.8&quot;W"></div>
+            <div class="measurement-point point-4" data-area="Field D: 22.1 acres" data-coords="38°46'06.7&quot;N 109°32'44.2&quot;W"></div>
+            <div class="measurement-point point-5" data-area="Field E: 16.8 acres" data-coords="38°46'04.1&quot;N 109°32'41.6&quot;W"></div>
+            <div class="measurement-point point-6" data-area="Field F: 10.8 acres" data-coords="38°46'02.5&quot;N 109°32'38.9&quot;W"></div>
+        </div>
+        
+        <div class="layer-panel">
+            <h4 style="margin: 0 0 10px 0; color: #ffdd33;">Survey Layers</h4>
+            <div class="layer-option">
+                <input type="checkbox" id="orthomosaic" checked>
+                <label for="orthomosaic">Orthomosaic Map</label>
+            </div>
+            <div class="layer-option">
+                <input type="checkbox" id="elevation" checked>
+                <label for="elevation">Elevation Data</label>
+            </div>
+            <div class="layer-option">
+                <input type="checkbox" id="boundaries">
+                <label for="boundaries">Property Boundaries</label>
+            </div>
+            <div class="layer-option">
+                <input type="checkbox" id="vegetation">
+                <label for="vegetation">Vegetation Index</label>
+            </div>
+        </div>
+        
+        <div class="survey-controls">
+            <button class="survey-btn" onclick="toggleMeasureMode()">Measure Tool</button>
+            <button class="survey-btn" onclick="exportData()">Export Data</button>
+            <button class="survey-btn" onclick="generateReport()">Generate Report</button>
+            <button class="survey-btn" onclick="toggleFullscreen()">Fullscreen</button>
+        </div>
+        
+        <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
+            <button class="zoom-btn" onclick="zoomOut()">-</button>
+        </div>
+        
+        <div class="info-overlay">
+            <h3 style="margin: 0 0 10px 0; color: #ffdd33;">Survey Data Summary</h3>
+            <p style="margin: 0; font-size: 14px; line-height: 1.4;">
+                <strong>Total Area:</strong> 125 acres<br>
+                <strong>Resolution:</strong> 2.1 cm/pixel<br>
+                <strong>Elevation Range:</strong> 4,320 - 4,385 ft<br>
+                <strong>Survey Date:</strong> May 28, 2025<br>
+                Click measurement points for detailed field data.
+            </p>
+        </div>
+        
+        <div class="measurement-tooltip" id="measureTooltip"></div>
+    </div>
+
+    <script>
+        let isDragging = false;
+        let currentScale = 1;
+        let currentX = 0;
+        let currentY = 0;
+        let measureMode = false;
+        
+        const viewer = document.getElementById('orthomosaicViewer');
+        const tooltip = document.getElementById('measureTooltip');
+        
+        // Pan functionality
+        viewer.addEventListener('mousedown', (e) => {
+            if (!measureMode) {
+                isDragging = true;
+                viewer.style.cursor = 'grabbing';
+            }
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging && !measureMode) {
+                currentX += e.movementX;
+                currentY += e.movementY;
+                updateTransform();
+            }
+        });
+        
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            viewer.style.cursor = measureMode ? 'crosshair' : 'grab';
+        });
+        
+        // Zoom functionality
+        viewer.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY * -0.01;
+            currentScale = Math.min(Math.max(0.5, currentScale + delta), 3);
+            updateTransform();
+        });
+        
+        function updateTransform() {
+            viewer.style.transform = `scale(${currentScale}) translate(${currentX}px, ${currentY}px)`;
+        }
+        
+        // Measurement point interactions
+        document.querySelectorAll('.measurement-point').forEach(point => {
+            point.addEventListener('mouseenter', (e) => {
+                const area = e.target.dataset.area;
+                const coords = e.target.dataset.coords;
+                tooltip.innerHTML = `${area}<br><small>${coords}</small>`;
+                tooltip.style.opacity = '1';
+            });
+            
+            point.addEventListener('mousemove', (e) => {
+                tooltip.style.left = e.pageX + 15 + 'px';
+                tooltip.style.top = e.pageY - 15 + 'px';
+            });
+            
+            point.addEventListener('mouseleave', () => {
+                tooltip.style.opacity = '0';
+            });
+            
+            point.addEventListener('click', (e) => {
+                const area = e.target.dataset.area;
+                const coords = e.target.dataset.coords;
+                alert(`Field Details:\n${area}\nCoordinates: ${coords}\nSoil Type: Loam\nDrainage: Good\nSlope: 2.3°`);
+            });
+        });
+        
+        function toggleMeasureMode() {
+            measureMode = !measureMode;
+            viewer.style.cursor = measureMode ? 'crosshair' : 'grab';
+            const btn = event.target;
+            btn.classList.toggle('active');
+            btn.textContent = measureMode ? 'Exit Measure' : 'Measure Tool';
+        }
+        
+        function zoomIn() {
+            currentScale = Math.min(3, currentScale * 1.2);
+            updateTransform();
+        }
+        
+        function zoomOut() {
+            currentScale = Math.max(0.5, currentScale / 1.2);
+            updateTransform();
+        }
+        
+        function exportData() {
+            alert('Exporting survey data:\n• GeoTIFF orthomosaic\n• DEM elevation model\n• KML boundary files\n• CSV measurement data');
+        }
+        
+        function generateReport() {
+            alert('Generating comprehensive survey report with:\n• Field measurements\n• Elevation analysis\n• Vegetation assessment\n• Recommended actions');
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        // Layer toggles
+        document.querySelectorAll('.layer-option input').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                console.log(`Layer ${e.target.id} ${e.target.checked ? 'enabled' : 'disabled'}`);
+                // In a real implementation, this would toggle map layers
+            });
+        });
+    </script>
+</body>
+</html>

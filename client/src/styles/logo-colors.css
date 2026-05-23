@@ -1,0 +1,35 @@
+/**
+ * Apollo DroneWorks Logo Color Definitions
+ * 
+ * This file defines the gold gradient color values used throughout
+ * the Apollo DroneWorks platform, derived from the company logo.
+ */
+
+:root {
+  /* Original gold colors from logo */
+  --gold-start: #C7AE6A;
+  --gold-middle: #E2D68B;
+  --gold-end: #8A6A2F;
+  
+  /* Apollo blue colors for dark backgrounds */
+  --apollo-blue-light: #132642;
+  --apollo-blue: #0b111f;
+  --apollo-blue-dark: #080d17;
+  
+  /* PDF colors */
+  --apollo-pdf-blue: #1b2f4d;
+  --apollo-pdf-dark-blue: #080e18;
+  
+  /* Dynamic time-based color variables */
+  --gold-start-dynamic: calc(var(--gold-start) * var(--gold-shift, 1));
+  --gold-middle-dynamic: calc(var(--gold-middle) * var(--gold-shift, 1));
+  --gold-end-dynamic: calc(var(--gold-end) * var(--gold-shift, 1));
+}
+
+/* Gold text gradient class */
+.text-gold-gradient {
+  background: linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

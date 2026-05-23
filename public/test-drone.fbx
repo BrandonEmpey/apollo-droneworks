@@ -1,0 +1,104 @@
+; FBX 7.4.0 project file
+; ----------------------------------------------------
+
+FBXHeaderExtension:  {
+	FBXHeaderVersion: 1003
+	FBXVersion: 7400
+	CreationTimeStamp:  {
+		Version: 1000
+		Year: 2024
+		Month: 4
+		Day: 27
+		Hour: 5
+		Minute: 2
+		Second: 33
+		Millisecond: 421
+	}
+	Creator: "Apollo DroneWorks - FBX Export"
+	OtherFlags:  {
+		FlagPLE: 0
+	}
+}
+
+; Object definitions
+;------------------------------------------------------------------
+
+Definitions:  {
+	Version: 100
+	Count: 4
+	ObjectType: "Model" {
+		Count: 1
+	}
+	ObjectType: "Geometry" {
+		Count: 1
+	}
+	ObjectType: "Material" {
+		Count: 1
+	}
+	ObjectType: "Implementation" {
+		Count: 1
+	}
+}
+
+; Object properties
+;------------------------------------------------------------------
+
+Objects:  {
+	Model: "Model::Drone", "Mesh" {
+		Version: 232
+		Properties70:  {
+			P: "RotationActive", "bool", "", "",1
+			P: "InheritType", "enum", "", "",1
+			P: "ScalingMax", "Vector3D", "Vector", "",0,0,0
+			P: "DefaultAttributeIndex", "int", "Integer", "",0
+		}
+		MultiLayer: 0
+		MultiTake: 1
+		Shading: T
+		Culling: "CullingOff"
+	}
+	Geometry: "Geometry::Drone", "Mesh" {
+		Vertices: *24 {
+			a: -10,-10,-10,10,-10,-10,10,10,-10,-10,10,-10,-10,-10,10,10,-10,10,10,10,10,-10,10,10
+		} 
+		PolygonVertexIndex: *24 {
+			a: 0,1,2,-4,4,7,6,-6,0,4,5,-2,1,5,6,-3,2,6,7,-4,3,7,4,-1
+		} 
+		Edges: *12 {
+			a: 0,1,2,3,4,5,6,7,8,10,14,18
+		} 
+		GeometryVersion: 124
+	}
+	Material: "Material::DroneBody", "" {
+		Version: 102
+		ShadingModel: "phong"
+		MultiLayer: 0
+		Properties70:  {
+			P: "AmbientColor", "Color", "", "A",0.2,0.2,0.2
+			P: "DiffuseColor", "Color", "", "A",0.8,0.8,0.8
+			P: "TransparentColor", "Color", "", "A",1,1,1
+			P: "SpecularColor", "Color", "", "A",0.2,0.2,0.2
+			P: "ShininessExponent", "Number", "", "A",20
+			P: "Emissive", "Vector3D", "Vector", "",0,0,0
+			P: "Ambient", "Vector3D", "Vector", "",0.2,0.2,0.2
+			P: "Diffuse", "Vector3D", "Vector", "",0.8,0.8,0.8
+			P: "Specular", "Vector3D", "Vector", "",0.2,0.2,0.2
+			P: "Shininess", "double", "Number", "",20
+			P: "Opacity", "double", "Number", "",1
+			P: "Reflectivity", "double", "Number", "",0
+		}
+	}
+	Implementation: "Implementation::DroneImplementation", "" {
+		Version: 100
+	}
+}
+
+; Object connections
+;------------------------------------------------------------------
+
+Connections:  {
+	Connect: "OO", "Model::Drone", "Model::Scene"
+	Connect: "OO", "Geometry::Drone", "Model::Drone"
+	Connect: "OO", "Material::DroneBody", "Model::Drone"
+	Connect: "OO", "Implementation::DroneImplementation", "Material::DroneBody"
+}

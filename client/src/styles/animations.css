@@ -1,0 +1,346 @@
+/**
+ * Apollo DroneWorks Animation Library
+ * 
+ * This file contains global animation styles for micro-interactions
+ * throughout the Apollo DroneWorks platform
+ */
+
+/* Base transition properties for common elements */
+.animate-all {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Scale transitions */
+.hover-scale {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+.hover-scale-sm {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale-sm:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale-lg {
+  transition: transform 0.3s ease;
+}
+
+.hover-scale-lg:hover {
+  transform: scale(1.1);
+}
+
+/* Button animations */
+.btn-pulse {
+  animation: btnPulse 2s infinite;
+}
+
+@keyframes btnPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(199, 174, 106, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(199, 174, 106, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(199, 174, 106, 0);
+  }
+}
+
+/* Icon animations */
+.icon-spin {
+  animation: iconSpin 2s linear infinite;
+}
+
+@keyframes iconSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-bounce {
+  animation: iconBounce 1s ease infinite;
+}
+
+@keyframes iconBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Fade animations */
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-out {
+  animation: fadeOut 0.5s ease-in-out;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* Slide animations */
+.slide-in-left {
+  animation: slideInLeft 0.5s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in-top {
+  animation: slideInTop 0.5s ease-out;
+}
+
+@keyframes slideInTop {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.slide-in-bottom {
+  animation: slideInBottom 0.5s ease-out;
+}
+
+@keyframes slideInBottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Special effect animations */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmerEffect 2s infinite;
+}
+
+@keyframes shimmerEffect {
+  from {
+    left: -100%;
+  }
+  to {
+    left: 200%;
+  }
+}
+
+/* Gold text shine effect */
+.text-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.text-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  animation: textShine 3s infinite;
+}
+
+@keyframes textShine {
+  from {
+    left: -100%;
+  }
+  to {
+    left: 200%;
+  }
+}
+
+/* Loading/spinner animations */
+.loading-dots:after {
+  content: '.';
+  animation: loadingDots 1.5s infinite;
+}
+
+@keyframes loadingDots {
+  0% { content: '.'; }
+  33% { content: '..'; }
+  66% { content: '...'; }
+  100% { content: '.'; }
+}
+
+/* Hover underline animation for links */
+.hover-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.hover-underline:after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background: var(--gold-gradient);
+  transform-origin: bottom right;
+  transition: transform 0.3s cubic-bezier(0.86, 0, 0.07, 1);
+}
+
+.hover-underline:hover:after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Background shine */
+.bg-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -60%;
+  width: 20%;
+  height: 200%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: rotate(30deg);
+  animation: bgShineEffect 6s infinite linear;
+}
+
+@keyframes bgShineEffect {
+  from {
+    left: -60%;
+  }
+  to {
+    left: 110%;
+  }
+}
+
+/* Card flip animation */
+.card-flip-container {
+  perspective: 1000px;
+}
+
+.card-flip {
+  position: relative;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+.card-flip-container:hover .card-flip {
+  transform: rotateY(180deg);
+}
+
+.card-flip-front, .card-flip-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+.card-flip-back {
+  transform: rotateY(180deg);
+}
+
+/* Focus-visible utility for accessibility */
+.focus-visible-ring {
+  @apply outline-none ring-offset-background transition-colors;
+}
+
+.focus-visible-ring:focus-visible {
+  @apply ring-2 ring-ring ring-offset-2;
+}
+
+/* Interactive element states */
+.interactive-element {
+  transition: all 0.2s ease-in-out;
+}
+
+.interactive-element:hover {
+  filter: brightness(1.1);
+}
+
+.interactive-element:active {
+  transform: scale(0.98);
+}
+
+/* Subtle parallax effect on mouse move */
+.parallax-container {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.parallax-element {
+  transition: transform 0.1s ease-out;
+  will-change: transform;
+}

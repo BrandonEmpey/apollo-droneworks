@@ -1,0 +1,193 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0KStarting client projects migration...
+Initializing database...
+All 10 canonical services present — skipping initialization.
+Admin user already exists, skipping creation.
+Skipping before/after images initialization for now...
+Testimonials already exist, skipping initialization.
+client_projects table already exists, skipping creation
+Client projects migration completed successfully
+Blog posts already exist, skipping initialization.
+Creating quotes table...
+Quotes table created successfully
+Quotes table created successfully
+Updating quotes table with business costs fields...
+Quotes table updated successfully with business costs fields
+Creating business config table...
+Business config table setup complete
+Adding software subscriptions and custom costs fields to business_config table...
+Successfully added new columns to business_config table
+Creating payroll tables...
+Departments table created successfully
+Employees table created successfully
+Payroll periods table created successfully
+Payroll entries table created successfully
+Time entries table created successfully
+Payroll tables created and initialized successfully
+Payroll tables created successfully
+Database initialization complete.
+Starting financial and analytics tables migration...
+Creating financial tables...
+Expense categories table created
+Expenses table created
+Income table created
+Financial accounts table created
+Financial reports table created
+Financial documents table created
+Budgets table created
+Budget allocations table created
+Financial tables created successfully
+Creating analytics tables...
+Project analytics table created
+Drone analytics table created
+Flight logs table created
+Marketing analytics table created
+Client analytics table created
+Analytics reports table created
+Analytics tables created successfully
+Default expense categories already exist, skipping creation
+Financial and analytics tables migration completed successfully!
+Financial and analytics systems initialized successfully
+Populating analytics data...
+Cleaning existing analytics data before population...
+Successfully populated analytics data
+Analytics data populated successfully
+Successfully synchronized financial data with analytics data
+Successfully synchronized payroll data with analytics system
+Financial and payroll data synchronized with analytics system
+Creating social media ad campaign tables...
+Ad campaigns table created successfully
+Ad contents table created successfully
+Platform previews table created successfully
+Ad templates table created successfully
+Campaign analytics table created successfully
+Publishing schedules table created successfully
+Social media ad campaign tables created successfully
+Social media ad tables created successfully
+Starting to seed ad campaigns data...
+Ad campaigns already exist, skipping seeding
+Ad campaigns seeded successfully
+Starting CRM migration...
+Creating CRM tables...
+Customers table created successfully
+Customer interactions table created successfully
+Customer deals table created successfully
+Customer tasks table created successfully
+CRM tables created successfully
+Adding client portal fields to customers table...
+Client portal fields already exist, skipping
+Seeding CRM data...
+CRM data already exists, skipping seeding
+Integrating CRM with analytics system...
+CRM successfully integrated with analytics system
+CRM migration completed successfully
+CRM migration completed successfully
+Starting keywords migration...
+models_3d table does not exist, skipping keywords addition
+Keywords migration completed successfully!
+Keywords migration completed successfully
+About page content table already exists, skipping creation
+About page content already exists, skipping population
+About page content migration completed successfully!
+About page content migration completed successfully
+Starting service add-on fields migration...
+Service add-on fields already exist, skipping migration
+Service add-on fields migration completed successfully
+Starting to add subscription fields to services table...
+Subscription fields already exist, skipping migration
+Service subscription fields migration completed successfully
+Service subscription fields migration completed successfully
+Starting subscription tiers migration...
+Subscription tiers table created successfully
+Subscription tiers index created successfully
+Found 0 services with subscription enabled
+Subscription tiers migration completed successfully
+Subscription tiers migration completed successfully
+Starting to add process_steps field to services table...
+Process steps field added to services table successfully
+Process steps migration completed successfully
+Starting to add featured_badge field to services table...
+featured_badge field added to services table successfully
+Featured badge migration completed successfully
+Starting client projects migration...
+client_projects table already exists, skipping creation
+Client projects migration completed successfully
+Client projects migration completed successfully
+Starting task notes fields migration...
+client_notes field already exists, skipping
+admin_notes field already exists, skipping
+Task notes fields migration completed successfully
+Task notes fields migration completed successfully
+Starting hero slides migration...
+hero_slides table already exists, skipping
+Hero slides migration completed successfully
+Add-on price cents migration already applied, skipping
+Add-on price cents migration completed successfully
+Legacy pricing tiers JSONB migration completed successfully
+[align-service-fk-rules] service_bundle_discounts_primary_service_id_fkey already has desired ON DELETE rule, skipping
+[align-service-fk-rules] service_bundle_discounts_secondary_service_id_fkey already has desired ON DELETE rule, skipping
+[align-service-fk-rules] bookings_service_id_fkey already has desired ON DELETE rule, skipping
+[align-service-fk-rules] FK alignment complete
+AI pricing routes registered successfully
+Trust administration routes registered successfully
+Satisfaction survey routes registered successfully
+Pricing routes registered successfully
+Referral routes registered successfully
+Operational efficiency routes registered successfully
+Customer experience routes registered successfully
+Pricing routes registered successfully
+Quote routes registered successfully
+Notification routes registered successfully
+AI pricing routes registered successfully
+9:47:22 PM [express] serving on port 5000
+[blog-cron] Scheduled weekly blog generation: Saturdays 9:00 AM Mountain Time
+Browserslist: browsers data (caniuse-lite) is 19 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+Fetching galleries, authenticated: [33mfalse[39m
+Public user, fetching public galleries
+9:47:47 PM [express] GET /api/blog 304 in 96ms :: [{"id":7,"title":"Building LUTs to Match Your Dron…
+9:47:47 PM [express] GET /api/hero-slides 304 in 111ms :: [{"id":1,"type":"image","title":"Southern …
+9:47:47 PM [express] GET /api/service-bundle-discounts 304 in 86ms :: []
+9:47:47 PM [express] GET /api/services 304 in 105ms :: [{"id":4120,"name":"Property & Site Evaluatio…
+First gallery item sample structure:
+{"id":1,"name":"Luxury Home Aerial - Southern Utah","type":"Photo","url":"/uploads/gallery/real-estate-luxury-home.png...","thumbnail":"/uploads/gallery/real-estate-luxury-home.png...","userId":1,"category":"Real Estate","isPublic":true}
+9:47:47 PM [express] GET /api/galleries 304 in 114ms :: [{"id":1,"userId":1,"bookingId":null,"name":…
+9:47:47 PM [express] GET /api/industry-tiles 304 in 100ms :: [{"id":4,"slug":"aerial-imagery","title…
+9:47:48 PM [express] GET /api/user 401 in 3ms
+Fetching galleries, authenticated: [33mfalse[39m
+Public user, fetching public galleries
+9:51:09 PM [express] GET /api/blog 304 in 35ms :: [{"id":7,"title":"Building LUTs to Match Your Dron…
+9:51:09 PM [express] GET /api/hero-slides 304 in 42ms :: [{"id":1,"type":"image","title":"Southern U…
+First gallery item sample structure:
+{"id":1,"name":"Luxury Home Aerial - Southern Utah","type":"Photo","url":"/uploads/gallery/real-estate-luxury-home.png...","thumbnail":"/uploads/gallery/real-estate-luxury-home.png...","userId":1,"category":"Real Estate","isPublic":true}
+9:51:09 PM [express] GET /api/galleries 304 in 37ms :: [{"id":1,"userId":1,"bookingId":null,"name":"…
+9:51:09 PM [express] GET /api/industry-tiles 304 in 32ms :: [{"id":4,"slug":"aerial-imagery","title"…
+9:51:09 PM [express] GET /api/service-bundle-discounts 304 in 27ms :: []
+9:51:09 PM [express] GET /api/services 304 in 43ms :: [{"id":4120,"name":"Property & Site Evaluation…
+9:51:09 PM [express] GET /api/user 401 in 1ms
+Fetching galleries, authenticated: [33mfalse[39m
+Public user, fetching public galleries
+First gallery item sample structure:
+{"id":1,"name":"Luxury Home Aerial - Southern Utah","type":"Photo","url":"/uploads/gallery/real-estate-luxury-home.png...","thumbnail":"/uploads/gallery/real-estate-luxury-home.png...","userId":1,"category":"Real Estate","isPublic":true}
+9:54:34 PM [express] GET /api/galleries 304 in 40ms :: [{"id":1,"userId":1,"bookingId":null,"name":"…
+9:54:34 PM [express] GET /api/hero-slides 304 in 44ms :: [{"id":1,"type":"image","title":"Southern U…
+9:54:34 PM [express] GET /api/services 304 in 51ms :: [{"id":4120,"name":"Property & Site Evaluation…
+9:54:34 PM [express] GET /api/blog 304 in 64ms :: [{"id":7,"title":"Building LUTs to Match Your Dron…
+9:54:34 PM [express] GET /api/industry-tiles 304 in 60ms :: [{"id":4,"slug":"aerial-imagery","title"…
+9:54:34 PM [express] GET /api/service-bundle-discounts 304 in 59ms :: []
+9:54:34 PM [express] GET /api/user 401 in 1ms
+Fetching galleries, authenticated: [33mfalse[39m
+Public user, fetching public galleries
+9:56:03 PM [express] GET /api/hero-slides 304 in 23ms :: [{"id":1,"type":"image","title":"Southern U…
+9:56:03 PM [express] GET /api/services 304 in 30ms :: [{"id":4120,"name":"Property & Site Evaluation…
+First gallery item sample structure:
+{"id":1,"name":"Luxury Home Aerial - Southern Utah","type":"Photo","url":"/uploads/gallery/real-estate-luxury-home.png...","thumbnail":"/uploads/gallery/real-estate-luxury-home.png...","userId":1,"category":"Real Estate","isPublic":true}
+9:56:03 PM [express] GET /api/galleries 304 in 35ms :: [{"id":1,"userId":1,"bookingId":null,"name":"…
+9:56:03 PM [express] GET /api/industry-tiles 304 in 25ms :: [{"id":4,"slug":"aerial-imagery","title"…
+9:56:03 PM [express] GET /api/service-bundle-discounts 304 in 32ms :: []
+9:56:03 PM [express] GET /api/blog 304 in 39ms :: [{"id":7,"title":"Building LUTs to Match Your Dron…
+9:56:03 PM [express] GET /api/user 401 in 1ms
