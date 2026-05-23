@@ -51,6 +51,7 @@ import CustomerDetail from "@/pages/admin/customer-detail";
 import QuoteBuilder from "@/pages/quote-builder";
 import IndustryPage from "@/pages/industry-page";
 import ExternalLinkPage from "@/pages/external-link";
+import CityServicesPage from "@/pages/city-services-page";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/login" component={AuthPage} />
       <Route path="/register" component={ClientRegistrationPage} />
       <Route path="/services" component={ServicesPage} />
+      <Route path="/services/area/:city" component={CityServicesPage} />
       <Route path="/services/:id" component={ServicePage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:id" component={BlogPostPage} />

@@ -229,7 +229,7 @@ async function populateAnalyticsData() {
       revenue: 2800.00,
       costs: 620.00,
       profit: 2180.00,
-      clientId: 2,
+      clientId: adminUser.id,
       qualityScore: 4.8,
       projectId: 2,
       notes: "Monthly monitoring of large construction project",
@@ -276,7 +276,7 @@ async function populateAnalyticsData() {
 
     // Add second client analytics using direct db operations
     await db.insert(clientAnalytics).values({
-      clientId: 2,
+      clientId: adminUser.id,
       clientType: "Construction Company",
       acquisitionSource: "Website",
       acquisitionDate: new Date("2023-02-28"),
@@ -293,7 +293,7 @@ async function populateAnalyticsData() {
 
     // Add third client analytics using direct db operations
     await db.insert(clientAnalytics).values({
-      clientId: 2, // Using test user ID as client
+      clientId: adminUser.id,
       clientType: "Event Organizer",
       acquisitionSource: "Instagram Ad",
       acquisitionDate: new Date("2023-04-10"),

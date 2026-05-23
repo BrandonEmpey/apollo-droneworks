@@ -6,8 +6,26 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ArrowLeft, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, AlertCircle, TrendingUp, Clock, Star } from "lucide-react";
 import droneIcon from "@assets/Icon_75_px_1767372891757.png";
+
+const CASE_STUDIES: Record<string, Array<{ title: string; result: string; metric: string; icon: React.ReactNode }>> = {
+  "real-estate": [
+    { title: "Luxury Home in Ivins", result: "Listed 18% above asking price after aerial showcase", metric: "+18%", icon: <TrendingUp className="h-5 w-5 text-gold" /> },
+    { title: "Washington City Development", result: "12-home subdivision sold out in 6 weeks with aerial video tour", metric: "6 wks", icon: <Clock className="h-5 w-5 text-gold" /> },
+    { title: "St. George Commercial Listing", result: "3× more online listing views vs. ground photography", metric: "3×", icon: <Star className="h-5 w-5 text-gold" /> },
+  ],
+  "construction": [
+    { title: "Iron County Highway Project", result: "Monthly progress reports cut stakeholder meeting time by 40%", metric: "–40%", icon: <TrendingUp className="h-5 w-5 text-gold" /> },
+    { title: "Cedar City Subdivision Build", result: "Identified grading issue early, saving $22K in rework costs", metric: "$22K", icon: <Star className="h-5 w-5 text-gold" /> },
+    { title: "Commercial Warehouse, St. George", result: "Weekly drone inspections replaced 3 on-site visits per month", metric: "3 visits", icon: <Clock className="h-5 w-5 text-gold" /> },
+  ],
+  "agriculture": [
+    { title: "Washington County Farm", result: "NDVI mapping revealed irrigation inefficiency, saving 30% water use", metric: "–30%", icon: <TrendingUp className="h-5 w-5 text-gold" /> },
+    { title: "Hurricane Orchard", result: "Identified pest outbreak 2 weeks before visible damage appeared", metric: "2 wks", icon: <Clock className="h-5 w-5 text-gold" /> },
+    { title: "Crop Acreage Survey", result: "400-acre survey completed in 4 hours vs. 3 days manual", metric: "4 hrs", icon: <Star className="h-5 w-5 text-gold" /> },
+  ],
+};
 
 export default function IndustryPage() {
   const params = useParams<{ slug: string }>();
@@ -183,6 +201,34 @@ export default function IndustryPage() {
             <section className="py-16 bg-[#0b111f]">
               <div className="container mx-auto px-4 max-w-6xl text-center">
                 <p className="text-gray-400 text-lg">No services are currently listed in this category.</p>
+              </div>
+            </section>
+          )}
+
+          {/* Case Studies */}
+          {CASE_STUDIES[categorySlug] && (
+            <section className="py-16 bg-[#080d17]">
+              <div className="container mx-auto px-4 max-w-5xl">
+                <div className="text-center mb-10">
+                  <h2 className="text-2xl md:text-3xl font-bold font-montserrat text-gold-gradient mb-3">
+                    Real Results for Our Clients
+                  </h2>
+                  <p className="text-offwhite/60 max-w-xl mx-auto">
+                    See how Southern Utah businesses have used Apollo DroneWorks to save time, reduce costs, and win more business.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {CASE_STUDIES[categorySlug].map((cs) => (
+                    <div key={cs.title} className="bg-[#132642] border border-gold-dark/20 rounded-lg p-6 hover:border-gold/40 transition-all">
+                      <div className="flex items-center gap-2 mb-3">
+                        {cs.icon}
+                        <span className="text-gold font-bold text-2xl">{cs.metric}</span>
+                      </div>
+                      <h3 className="text-offwhite font-semibold mb-2">{cs.title}</h3>
+                      <p className="text-offwhite/60 text-sm">{cs.result}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           )}

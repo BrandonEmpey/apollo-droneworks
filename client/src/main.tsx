@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import "leaflet/dist/leaflet.css";
 
 // Add global CSS variables for gold and black gradients
 const style = document.createElement('style');

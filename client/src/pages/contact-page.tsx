@@ -3,6 +3,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { ContactForm } from "@/components/contact-form";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapContainer, TileLayer, Circle, Popup } from "react-leaflet";
 
 export default function ContactPage() {
   return (
@@ -109,16 +110,35 @@ export default function ContactPage() {
               </div>
             </div>
             
-            {/* Map Section */}
+            {/* Service Area Map */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gold-gradient mb-2">Our Service Area</h2>
+              <p className="text-offwhite/70 mb-4">We serve Southern Utah and surrounding areas. Contact us to confirm coverage for your location.</p>
+            </div>
             <div className="rounded-lg overflow-hidden border border-gold-dark/30 h-[400px] mb-16">
-              <div className="w-full h-full bg-[#132642] flex items-center justify-center">
-                <div className="text-center p-8">
-                  <MapPin className="h-16 w-16 text-gold/50 mx-auto mb-4" />
-                  <p className="text-offwhite/70 max-w-md">
-                    Map integration will be added here. For now, you can find us at 1234 Skyview Drive, Seattle, WA 98101.
-                  </p>
-                </div>
-              </div>
+              <MapContainer
+                center={[37.1041, -113.5841]}
+                zoom={9}
+                style={{ height: "100%", width: "100%" }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Circle
+                  center={[37.1041, -113.5841]}
+                  radius={80000}
+                  pathOptions={{ color: "#C7AE6A", fillColor: "#C7AE6A", fillOpacity: 0.15, weight: 2 }}
+                >
+                  <Popup>
+                    <div style={{ textAlign: "center", padding: "4px" }}>
+                      <strong>Apollo DroneWorks</strong><br />
+                      Serving Southern Utah<br />
+                      <a href="tel:+1-435-000-0000">Call for availability</a>
+                    </div>
+                  </Popup>
+                </Circle>
+              </MapContainer>
             </div>
           </div>
         </div>

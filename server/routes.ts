@@ -31,6 +31,7 @@ import { registerTrustAdministrationRoutes } from "./trust-administration-routes
 import { registerSatisfactionRoutes } from "./satisfaction-routes";
 import { AIRecommendationEngine } from "./ai/recommendation-engine";
 import { populateAnalyticsData } from "./populate-analytics-data";
+import { sendBookingConfirmationEmail, sendTestimonialRequestEmail } from "./email-service";
 import { seedAdCampaigns } from "./seed-ad-campaigns";
 import Stripe from "stripe";
 import { WebSocketServer } from "ws";
@@ -1075,6 +1076,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             (prevStatus === "completed" || updatedBooking.status === "completed")
           ) {
             await synchronizeFinancialWithAnalytics();
+
+            // Send testimonial request email when project is marked completed
+            if (updatedBooking.status === "completed") {
+              try {
+                const bookingUser = await storage.getUser(updatedBooking.userId!);
+                const allSvcs = await storage.getServices();
+                const svc = allSvcs.find(s => s.id === updatedBooking.serviceId);
+                if (bookingUser?.email) {
+                  await sendTestimonialRequestEmail({
+                    toEmail: bookingUser.email,
+                    toName: bookingUser.firstName || bookingUser.username,
+                    serviceName: svc?.name || "drone service",
+                  });
+                }
+              } catch (emailErr) {
+                console.error("Testimonial email failed (non-fatal):", emailErr);
+              }
+            }
           }
         } catch (syncError) {
           console.error("Failed to sync booking income:", syncError);

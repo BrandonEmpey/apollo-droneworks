@@ -4,6 +4,7 @@ import { quotes, users } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { requireAuth } from "./auth";
 import { createNotification } from "./notification-routes";
+import { sendQuoteEmail } from "./email-service";
 
 interface QuoteData {
   clientInfo: {
@@ -112,8 +113,21 @@ export function registerQuoteRoutes(app: Express) {
         });
       }
 
-      // TODO: Send email to client with quote details
-      // This would require email service integration
+      // Send confirmation email to client (no-op if SendGrid key not configured)
+      try {
+        const serviceNames = quoteData.services?.map((s: any) => s.name || s) ?? ["Drone Services"];
+        await sendQuoteEmail({
+          toEmail: quoteData.clientInfo.email,
+          toName: quoteData.clientInfo.name,
+          quoteId: quote[0].id,
+          projectName: quoteData.projectDetails.projectName,
+          totalAmount: quoteData.calculation.totalPrice.toFixed(2),
+          validUntil: new Date(quoteData.validUntil).toLocaleDateString(),
+          services: serviceNames,
+        });
+      } catch (emailErr) {
+        console.error("Quote email failed (non-fatal):", emailErr);
+      }
       
       res.status(201).json({
         message: "Quote generated successfully",

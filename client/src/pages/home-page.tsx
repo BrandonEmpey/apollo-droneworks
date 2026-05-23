@@ -13,6 +13,8 @@ import BlogPreviewSection from "@/components/blog-preview-section";
 import ContactSection from "@/components/contact-section";
 import PortfolioShowcaseSection from "@/components/portfolio-showcase-section";
 import IndustryTiles from "@/components/industry-tiles";
+import { TrustBar } from "@/components/trust-bar";
+import { VideoShowcaseSection } from "@/components/video-showcase-section";
 
 export default function HomePage() {
   return (
@@ -29,7 +31,8 @@ export default function HomePage() {
         <main className="flex-grow">
           {/* Main hero for tablet/desktop */}
           <HeroSection />
-          
+          <TrustBar />
+
           {/* Mobile-only intro section */}
           <div className="sm:hidden py-20 px-4 bg-gradient-to-b from-[#0b111f] to-[#132642] text-center">
             <img 
@@ -62,6 +65,7 @@ export default function HomePage() {
           </div>
           
           <IndustryTiles />
+          <VideoShowcaseSection />
           {/* Portfolio showcase carousel removed as requested */}
           <GallerySection limit={6} />
           <BlogPreviewSection />
