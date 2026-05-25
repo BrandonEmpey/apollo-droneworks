@@ -1,7 +1,7 @@
 import sgMail from "@sendgrid/mail";
 
 const SENDGRID_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "info@apollodronesinc.com";
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL || "apollodroneworks@icloud.com";
 const FROM_NAME = "Apollo DroneWorks";
 
 if (SENDGRID_KEY) {
@@ -47,7 +47,7 @@ export async function sendQuoteEmail(opts: {
         <hr style="border-color: #333; margin: 24px 0;" />
         <p>Ready to move forward? Book your service online or reply to this email to discuss your project.</p>
         <a href="${process.env.CLIENT_URL || "http://localhost:3000"}/booking" style="display: inline-block; background: #C7AE6A; color: #000; padding: 12px 28px; border-radius: 4px; text-decoration: none; font-weight: bold; margin: 8px 0;">Book Now</a>
-        <p style="color: #aaa; font-size: 12px; margin-top: 32px;">Apollo DroneWorks · Southern Utah · info@apollodronesinc.com</p>
+        <p style="color: #aaa; font-size: 12px; margin-top: 32px;">Apollo DroneWorks · Southern Utah · apollodroneworks@icloud.com</p>
       </div>
     `,
   });
@@ -84,7 +84,7 @@ export async function sendBookingConfirmationEmail(opts: {
         <hr style="border-color: #333; margin: 24px 0;" />
         <p>We'll be in touch closer to your flight date to confirm weather and logistics. Track your project status in your client portal.</p>
         <a href="${process.env.CLIENT_URL || "http://localhost:3000"}/dashboard" style="display: inline-block; background: #C7AE6A; color: #000; padding: 12px 28px; border-radius: 4px; text-decoration: none; font-weight: bold; margin: 8px 0;">View Dashboard</a>
-        <p style="color: #aaa; font-size: 12px; margin-top: 32px;">Apollo DroneWorks · Southern Utah · info@apollodronesinc.com</p>
+        <p style="color: #aaa; font-size: 12px; margin-top: 32px;">Apollo DroneWorks · Southern Utah · apollodroneworks@icloud.com</p>
       </div>
     `,
   });
@@ -111,7 +111,7 @@ export async function sendTestimonialRequestEmail(opts: {
         <p>If you have a moment, we'd love for you to share your experience. It helps other clients find us and helps us keep improving.</p>
         <a href="${process.env.CLIENT_URL || "http://localhost:3000"}/testimonials" style="display: inline-block; background: #C7AE6A; color: #000; padding: 12px 28px; border-radius: 4px; text-decoration: none; font-weight: bold; margin: 8px 0;">Leave a Review</a>
         <p>Thank you,<br/>The Apollo DroneWorks Team</p>
-        <p style="color: #aaa; font-size: 12px; margin-top: 32px;">Apollo DroneWorks · Southern Utah · info@apollodronesinc.com</p>
+        <p style="color: #aaa; font-size: 12px; margin-top: 32px;">Apollo DroneWorks · Southern Utah · apollodroneworks@icloud.com</p>
       </div>
     `,
   });

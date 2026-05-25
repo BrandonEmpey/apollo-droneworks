@@ -5,7 +5,7 @@ import { Booking, Gallery, Service, Customer as Client, CustomerInteraction, Cus
 import { useAuth } from "@/hooks/use-auth";
 
 import { ProjectCard } from "@/components/client/project-card";
-import ClientProjects from "@/components/client/client-projects";
+import PortalProjects from "@/components/client/portal-projects";
 import { PrintableReceipt } from "@/components/client/printable-receipt";
 import VirtualTours from "@/components/client/virtual-tours";
 import { MediaItem } from "@/types/media";
@@ -224,9 +224,30 @@ export default function ClientDashboard() {
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
+  const [newProjectClientId, setNewProjectClientId] = useState<string>("");
+  const [newProjectServiceIds, setNewProjectServiceIds] = useState<number[]>([]);
+  const [newProjectDueDate, setNewProjectDueDate] = useState("");
+  const [newProjectAddress, setNewProjectAddress] = useState("");
+
+  const resetNewProjectForm = () => {
+    setNewProjectName("");
+    setNewProjectDescription("");
+    setNewProjectClientId("");
+    setNewProjectServiceIds([]);
+    setNewProjectDueDate("");
+    setNewProjectAddress("");
+  };
 
   const createProjectMutation = useMutation({
-    mutationFn: async (data: { name: string; description?: string }) => {
+    mutationFn: async (data: {
+      name: string;
+      description?: string;
+      clientId?: number;
+      selectedServices?: number[];
+      serviceId?: number;
+      dueDate?: string;
+      address?: string;
+    }) => {
       const response = await apiRequest("POST", "/api/client-projects", data);
       if (!response.ok) {
         const error = await response.json();
@@ -240,9 +261,9 @@ export default function ClientDashboard() {
     onSuccess: () => {
       toast({ title: "Success", description: "Project created successfully" });
       setShowNewProjectDialog(false);
-      setNewProjectName("");
-      setNewProjectDescription("");
+      resetNewProjectForm();
       queryClient.invalidateQueries({ queryKey: ["/api/client/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/client-projects"] });
     },
   });
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -367,6 +388,17 @@ export default function ClientDashboard() {
     },
   });
   
+  // Fetch all customers for admin project creation
+  const { data: allCustomers } = useQuery<any[]>({
+    queryKey: ['/api/crm/customers'],
+    queryFn: async () => {
+      const response = await fetch('/api/crm/customers');
+      if (!response.ok) throw new Error('Failed to load customers');
+      return response.json();
+    },
+    enabled: !!user?.isAdmin,
+  });
+
   // Fetch business configuration
   const { data: businessConfig, isLoading: isLoadingBusinessConfig } = useQuery({
     queryKey: ['/api/business-config'],
@@ -645,7 +677,7 @@ export default function ClientDashboard() {
         {/* Tab Content */}
         {/* Projects Tab */}
         <TabsContent value="projects" className="mt-4">
-          <ClientProjects />
+          <PortalProjects />
         </TabsContent>
         
         {/* Bookings Tab */}
@@ -983,40 +1015,120 @@ export default function ClientDashboard() {
     </div>
 
     {/* New Project Dialog */}
-    <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
-      <DialogContent className="bg-[#132642] border-gold-dark/30 text-offwhite max-w-md">
+    <Dialog open={showNewProjectDialog} onOpenChange={(open) => { setShowNewProjectDialog(open); if (!open) resetNewProjectForm(); }}>
+      <DialogContent className="bg-[#132642] border-gold-dark/30 text-offwhite max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-gold-gradient">Create New Project</DialogTitle>
           <DialogDescription className="text-offwhite/70">
-            Start a new project to track your drone services and progress.
+            Set up a new drone services project with its associated client and services.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 py-2">
+          {/* Project Name */}
           <div>
-            <label className="text-sm font-medium text-offwhite mb-2 block">Project Name</label>
+            <label className="text-sm font-medium text-offwhite mb-2 block">Project Name <span className="text-red-400">*</span></label>
             <Input
-              placeholder="Enter project name"
+              placeholder="e.g. Skyline Estates Listing Photos"
               className="bg-[#080d17] border-gold-dark/30 text-offwhite"
               value={newProjectName}
               onChange={(e) => setNewProjectName(e.target.value)}
             />
           </div>
+
+          {/* Client selector — admin only */}
+          {user?.isAdmin && (
+            <div>
+              <label className="text-sm font-medium text-offwhite mb-2 block">Client <span className="text-red-400">*</span></label>
+              <Select value={newProjectClientId} onValueChange={setNewProjectClientId}>
+                <SelectTrigger className="bg-[#080d17] border-gold-dark/30 text-offwhite">
+                  <SelectValue placeholder="Select a client…" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#132642] border-gold-dark/30 text-offwhite">
+                  {(allCustomers || []).map((c: any) => (
+                    <SelectItem key={c.id} value={String(c.id)} className="focus:bg-gold/10">
+                      {c.firstName || c.lastName
+                        ? `${c.firstName ?? ""} ${c.lastName ?? ""}`.trim()
+                        : c.name || c.email || `Client #${c.id}`}
+                      {c.company ? ` — ${c.company}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Services */}
           <div>
-            <label className="text-sm font-medium text-offwhite mb-2 block">Description (Optional)</label>
+            <label className="text-sm font-medium text-offwhite mb-2 block">Services Included</label>
+            <p className="text-xs text-offwhite/50 mb-3">Select all services that apply — the system will generate the expected deliverables automatically.</p>
+            <div className="grid grid-cols-1 gap-2 max-h-44 overflow-y-auto pr-1">
+              {(services || []).map((svc: any) => (
+                <label
+                  key={svc.id}
+                  className={`flex items-center gap-3 p-2.5 rounded-md border cursor-pointer transition-colors ${
+                    newProjectServiceIds.includes(svc.id)
+                      ? "border-gold/60 bg-gold/10"
+                      : "border-gold-dark/20 hover:border-gold-dark/40"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="accent-gold"
+                    checked={newProjectServiceIds.includes(svc.id)}
+                    onChange={(e) => {
+                      setNewProjectServiceIds(prev =>
+                        e.target.checked ? [...prev, svc.id] : prev.filter(id => id !== svc.id)
+                      );
+                    }}
+                  />
+                  <span className="text-sm text-offwhite">{svc.name}</span>
+                  {svc.price && (
+                    <span className="ml-auto text-xs text-gold/70">${Number(svc.price).toLocaleString()}</span>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Due Date + Address */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-offwhite mb-2 block">Due Date</label>
+              <Input
+                type="date"
+                className="bg-[#080d17] border-gold-dark/30 text-offwhite"
+                value={newProjectDueDate}
+                onChange={(e) => setNewProjectDueDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-offwhite mb-2 block">Location / Address</label>
+              <Input
+                placeholder="Job site address"
+                className="bg-[#080d17] border-gold-dark/30 text-offwhite"
+                value={newProjectAddress}
+                onChange={(e) => setNewProjectAddress(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="text-sm font-medium text-offwhite mb-2 block">Notes (Optional)</label>
             <Textarea
-              placeholder="Brief description of the project"
-              className="bg-[#080d17] border-gold-dark/30 text-offwhite min-h-[80px]"
+              placeholder="Any additional details, access instructions, or special requirements…"
+              className="bg-[#080d17] border-gold-dark/30 text-offwhite min-h-[72px]"
               value={newProjectDescription}
               onChange={(e) => setNewProjectDescription(e.target.value)}
             />
           </div>
         </div>
 
-        <DialogFooter className="mt-6">
+        <DialogFooter className="mt-4">
           <Button
             variant="outline"
-            onClick={() => { setShowNewProjectDialog(false); setNewProjectName(""); setNewProjectDescription(""); }}
+            onClick={() => { setShowNewProjectDialog(false); resetNewProjectForm(); }}
             className="border-gold-dark/40 text-offwhite hover:bg-gold-dark/10"
           >
             Cancel
@@ -1029,7 +1141,19 @@ export default function ClientDashboard() {
                 toast({ title: "Error", description: "Please enter a project name", variant: "destructive" });
                 return;
               }
-              createProjectMutation.mutate({ name: newProjectName, description: newProjectDescription || undefined });
+              if (user?.isAdmin && !newProjectClientId) {
+                toast({ title: "Error", description: "Please select a client", variant: "destructive" });
+                return;
+              }
+              createProjectMutation.mutate({
+                name: newProjectName,
+                description: newProjectDescription || undefined,
+                clientId: newProjectClientId ? parseInt(newProjectClientId) : undefined,
+                selectedServices: newProjectServiceIds.length > 0 ? newProjectServiceIds : undefined,
+                serviceId: newProjectServiceIds.length > 0 ? newProjectServiceIds[0] : undefined,
+                dueDate: newProjectDueDate || undefined,
+                address: newProjectAddress || undefined,
+              });
             }}
           >
             {createProjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

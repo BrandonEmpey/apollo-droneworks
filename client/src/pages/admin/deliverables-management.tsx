@@ -71,11 +71,7 @@ export default function DeliverablesManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: DeliverableFormData) => {
-      return apiRequest("/api/admin/service-deliverables", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("POST", "/api/admin/service-deliverables", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-deliverables"] });
@@ -91,11 +87,7 @@ export default function DeliverablesManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<DeliverableFormData> }) => {
-      return apiRequest(`/api/admin/service-deliverables/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json" },
-      });
+      return apiRequest("PUT", `/api/admin/service-deliverables/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-deliverables"] });
@@ -111,9 +103,7 @@ export default function DeliverablesManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/admin/service-deliverables/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest("DELETE", `/api/admin/service-deliverables/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/service-deliverables"] });

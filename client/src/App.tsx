@@ -34,7 +34,6 @@ import AdminOverview from "@/pages/admin/admin-overview";
 import AdminAnalytics from "@/pages/admin/analytics";
 import ContentManagement from "@/pages/admin/content-management";
 import ClientOperations from "@/pages/admin/client-operations";
-import MarketingHub from "@/pages/admin/marketing-hub";
 import SystemSettings from "@/pages/admin/system-settings";
 import AdminThemeEditor from "@/pages/admin/theme-editor";
 import ServicesManagement from "@/pages/admin/services-management";
@@ -48,6 +47,11 @@ import WorkflowManagement from "@/pages/admin/workflow-management";
 import TrustAdministration from "@/pages/admin/trust-administration";
 import IndustryTilesManagement from "@/pages/admin/industry-tiles-management";
 import CustomerDetail from "@/pages/admin/customer-detail";
+import ProjectDashboard from "@/pages/admin/project-dashboard";
+import ClientProjectsPage from "@/pages/admin/client-projects-page";
+import ProjectDetailPage from "@/pages/admin/project-detail-page";
+import BlogManagement from "@/pages/admin/blog-management";
+import AdminSettings from "@/pages/admin-settings";
 import QuoteBuilder from "@/pages/quote-builder";
 import IndustryPage from "@/pages/industry-page";
 import ExternalLinkPage from "@/pages/external-link";
@@ -93,7 +97,6 @@ function Router() {
       <ProtectedRoute path="/admin/content" component={ContentManagement} adminOnly={true} />
       <ProtectedRoute path="/admin/clients" component={ClientOperations} adminOnly={true} />
       <ProtectedRoute path="/admin/finance" component={FinancePage} adminOnly={true} />
-      <ProtectedRoute path="/admin/marketing" component={MarketingHub} adminOnly={true} />
       <ProtectedRoute path="/admin/settings" component={SystemSettings} adminOnly={true} />
       <ProtectedRoute path="/admin/services" component={ServicesManagement} adminOnly={true} />
       <ProtectedRoute path="/admin/addons" component={AddonsManagement} adminOnly={true} />
@@ -105,13 +108,16 @@ function Router() {
       <ProtectedRoute path="/admin/workflows" component={WorkflowManagement} adminOnly={true} />
       <ProtectedRoute path="/admin/trust-administration" component={TrustAdministration} adminOnly={true} />
       <ProtectedRoute path="/admin/industry-tiles" component={IndustryTilesManagement} adminOnly={true} />
-      <ProtectedRoute path="/admin/projects" component={ClientOperations} adminOnly={true} />
+      <ProtectedRoute path="/admin/projects" component={ProjectDashboard} adminOnly={true} />
+      <ProtectedRoute path="/admin/projects/:id" component={ProjectDetailPage} adminOnly={true} />
+      <ProtectedRoute path="/admin/clients/:clientId" component={ClientProjectsPage} adminOnly={true} />
+      <ProtectedRoute path="/admin/blog" component={BlogManagement} adminOnly={true} />
+      <ProtectedRoute path="/admin/file-management" component={AdminSettings} adminOnly={true} />
       <ProtectedRoute path="/admin/bookings" component={ClientOperations} adminOnly={true} />
       <ProtectedRoute path="/admin/communication" component={ClientOperations} adminOnly={true} />
       <ProtectedRoute path="/admin/client-portal" component={ClientOperations} adminOnly={true} />
       <ProtectedRoute path="/admin/crm/customers/:id" component={CustomerDetail} adminOnly={true} />
       <ProtectedRoute path="/admin/bookings/:id" component={ClientOperations} adminOnly={true} />
-      <ProtectedRoute path="/admin/projects/:id" component={ClientOperations} adminOnly={true} />
       <ProtectedRoute path="/admin/theme" component={AdminThemeEditor} adminOnly={true} />
       <Route path="/quote" component={QuoteBuilder} />
 

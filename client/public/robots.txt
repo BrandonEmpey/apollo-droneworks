@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# Keep admin, client, and checkout paths out of search indexes
+Disallow: /admin/
+Disallow: /dashboard
+Disallow: /client
+Disallow: /booking
+Disallow: /checkout/
+Disallow: /quote
+Disallow: /external-link
+Disallow: /auth
+Disallow: /login
+Disallow: /register
+
+Sitemap: https://apollodroneworks.com/sitemap.xml

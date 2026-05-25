@@ -333,6 +333,8 @@ export const socialPosts = pgTable("social_posts", {
   scheduledFor: timestamp("scheduled_for"),
   published: boolean("published").default(false).notNull(),
   publishedTo: jsonb("published_to").$type<string[]>().default([]),
+  blogPostId: integer("blog_post_id"),
+  platform: text("platform"), // 'instagram', 'facebook', 'twitter'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -713,6 +715,8 @@ export const insertSocialPostSchema = createInsertSchema(socialPosts).pick({
   scheduledFor: true,
   published: true,
   publishedTo: true,
+  blogPostId: true,
+  platform: true,
 });
 
 // Social media types
@@ -2085,8 +2089,10 @@ export const clientProjects = pgTable("client_projects", {
   description: text("description"),
   clientId: integer("client_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
   serviceId: integer("service_id").references(() => services.id, { onDelete: "set null" }),
-  selectedServices: json("selected_services").$type<number[]>().default([]), // All services included in this project
+  selectedServices: json("selected_services").$type<number[]>().default([]),
   status: varchar("status", { length: 50 }).default("active"),
+  droneType: varchar("drone_type", { length: 100 }),
+  dueDate: timestamp("due_date", { withTimezone: true }),
   startDate: timestamp("start_date", { withTimezone: true }).defaultNow(),
   completedDate: timestamp("completed_date", { withTimezone: true }),
   address: text("address"),
@@ -2096,6 +2102,29 @@ export const clientProjects = pgTable("client_projects", {
   shareableLinkExpiry: timestamp("shareable_link_expiry", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const projectDeliverables = pgTable("project_deliverables", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => clientProjects.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 100 }).notNull().default("file"),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  dueDate: timestamp("due_date", { withTimezone: true }),
+  fileUrl: text("file_url"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const projectFiles = pgTable("project_files", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => clientProjects.id, { onDelete: "cascade" }),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  filePath: text("file_path").notNull(),
+  fileType: varchar("file_type", { length: 50 }).notNull().default("other"),
+  fileSize: integer("file_size"),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).defaultNow(),
 });
 
 // Project milestones for tracking progress and deliverables
@@ -2260,7 +2289,40 @@ const baseClientProjectSchema = createInsertSchema(clientProjects).pick({
 // Add validation to explicitly make name required
 export const insertClientProjectSchema = baseClientProjectSchema.extend({
   name: z.string().min(1, "Project name is required"),
+  droneType: z.string().optional(),
+  dueDate: z.preprocess(
+    (arg) => typeof arg === "string" ? new Date(arg) : arg,
+    z.date().optional()
+  ),
 });
+
+export const insertProjectDeliverableSchema = createInsertSchema(projectDeliverables).pick({
+  projectId: true,
+  name: true,
+  type: true,
+  status: true,
+  dueDate: true,
+  fileUrl: true,
+  notes: true,
+}).extend({
+  dueDate: z.preprocess(
+    (arg) => typeof arg === "string" ? new Date(arg) : arg,
+    z.date().optional()
+  ),
+});
+
+export const insertProjectFileSchema = createInsertSchema(projectFiles).pick({
+  projectId: true,
+  fileName: true,
+  filePath: true,
+  fileType: true,
+  fileSize: true,
+});
+
+export type ProjectDeliverable = typeof projectDeliverables.$inferSelect;
+export type InsertProjectDeliverable = z.infer<typeof insertProjectDeliverableSchema>;
+export type ProjectFile = typeof projectFiles.$inferSelect;
+export type InsertProjectFile = z.infer<typeof insertProjectFileSchema>;
 
 // Create a base schema for project milestones
 const baseProjectMilestoneSchema = createInsertSchema(projectMilestones).pick({
@@ -3195,6 +3257,105 @@ export const insertHeroSlideSchema = createInsertSchema(heroSlides, {
 
 export type InsertHeroSlide = z.infer<typeof insertHeroSlideSchema>;
 export type HeroSlide = typeof heroSlides.$inferSelect;
+
+// Business Asset Registry — tracks owned assets with depreciation for job costing
+export const businessAssets = pgTable("business_assets", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type", { length: 50 }).notNull().default("other"), // drone | vehicle | equipment | software | other
+  description: text("description"),
+  serialNumber: varchar("serial_number", { length: 255 }),
+  purchasePrice: numeric("purchase_price", { precision: 12, scale: 2 }).notNull(),
+  purchaseDate: date("purchase_date").notNull(),
+  salvageValue: numeric("salvage_value", { precision: 12, scale: 2 }).default("0"),
+  usefulLifeYears: integer("useful_life_years").notNull().default(5),
+  expectedReplacementDate: date("expected_replacement_date"),
+  depreciationMethod: varchar("depreciation_method", { length: 30 }).notNull().default("straight-line"), // straight-line | macrs-5 | section-179
+  // Vehicle-specific fields
+  vehicleMileageMethod: varchar("vehicle_mileage_method", { length: 20 }), // actual | standard
+  totalMilesAtPurchase: integer("total_miles_at_purchase"),
+  currentMiles: integer("current_miles"),
+  // Insurance cost allocated to this asset
+  monthlyInsuranceCost: numeric("monthly_insurance_cost", { precision: 10, scale: 2 }).default("0"),
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertBusinessAssetSchema = createInsertSchema(businessAssets).pick({
+  name: true,
+  type: true,
+  description: true,
+  serialNumber: true,
+  purchasePrice: true,
+  purchaseDate: true,
+  salvageValue: true,
+  usefulLifeYears: true,
+  expectedReplacementDate: true,
+  depreciationMethod: true,
+  vehicleMileageMethod: true,
+  totalMilesAtPurchase: true,
+  currentMiles: true,
+  monthlyInsuranceCost: true,
+  isActive: true,
+  notes: true,
+}).extend({
+  purchasePrice: z.preprocess(v => v === '' ? null : Number(v), z.number().positive()),
+  salvageValue: z.preprocess(v => v === '' || v === null || v === undefined ? 0 : Number(v), z.number().min(0)).optional(),
+  monthlyInsuranceCost: z.preprocess(v => v === '' || v === null || v === undefined ? 0 : Number(v), z.number().min(0)).optional(),
+});
+
+export type InsertBusinessAsset = z.infer<typeof insertBusinessAssetSchema>;
+export type BusinessAsset = typeof businessAssets.$inferSelect;
+
+// Service-level deliverable templates — defines what deliverables a service
+// produces by default. Used by DeliverablesManagement admin page.
+export const serviceDeliverables = pgTable("service_deliverables", {
+  id: serial("id").primaryKey(),
+  serviceId: integer("service_id").notNull().references(() => services.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  defaultDaysToComplete: integer("default_days_to_complete").default(7),
+  displayOrder: integer("display_order").default(0),
+  isRequired: boolean("is_required").default(true),
+  defaultExternalUrlLabel: varchar("default_external_url_label", { length: 255 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const insertServiceDeliverableSchema = createInsertSchema(serviceDeliverables).pick({
+  serviceId: true,
+  name: true,
+  description: true,
+  defaultDaysToComplete: true,
+  displayOrder: true,
+  isRequired: true,
+  defaultExternalUrlLabel: true,
+});
+
+export type InsertServiceDeliverable = z.infer<typeof insertServiceDeliverableSchema>;
+export type ServiceDeliverable = typeof serviceDeliverables.$inferSelect;
+
+// Client-facing deliverable files shared with customers (with expiry dates).
+// Matches the client_files table created by server/migrations/add-client-files.ts.
+export const clientFiles = pgTable("client_files", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id").notNull().references(() => customers.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  fileUrl: text("file_url").notNull(),
+  fileType: varchar("file_type", { length: 50 }).notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  size: integer("size").notNull(),
+  uploadedAt: timestamp("uploaded_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  isPublic: boolean("is_public").notNull().default(false),
+  bookingId: integer("booking_id").references(() => bookings.id, { onDelete: "set null" }),
+  projectId: integer("project_id").references(() => clientProjects.id, { onDelete: "set null" }),
+});
+
+export type ClientFile = typeof clientFiles.$inferSelect;
 
 // Express session store table (managed by connect-pg-simple, not by app code).
 // Declared here so drizzle-kit treats it as part of the schema and never proposes

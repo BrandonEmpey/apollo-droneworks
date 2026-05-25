@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Helmet } from "react-helmet-async";
-import { Plus, Edit, Trash2, DollarSign, Package, Settings, Minus, GripVertical, ArrowUp, ArrowDown, Link, Info, Upload, Image, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Edit, Trash2, DollarSign, Package, Settings, Minus, GripVertical, ArrowUp, ArrowDown, Link as LinkIcon, Info, Upload, Image, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { formatImageRejectionToast, parseAerialRejectionError } from "@/lib/upload-error";
 import { EnhancedServiceCard } from "@/components/enhanced-service-card";
 import { ServicesDisplayTest } from "@/components/services-display-test";
@@ -701,6 +702,28 @@ export default function ServicesManagement() {
             <h1 className="text-3xl font-bold text-white">Services Management</h1>
             <p className="text-gray-400 mt-2">10 canonical drone services across 3 categories — edit details and pricing below</p>
           </div>
+        </div>
+
+        {/* Related pages quick-links */}
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/addons">
+            <Button variant="outline" size="sm" className="border-gold/30 text-gold hover:bg-gold/10">
+              <Package className="h-4 w-4 mr-2" />
+              Manage Add-ons
+            </Button>
+          </Link>
+          <Link href="/admin/pricing">
+            <Button variant="outline" size="sm" className="border-gold/30 text-gold hover:bg-gold/10">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Pricing Optimization
+            </Button>
+          </Link>
+          <Link href="/quote">
+            <Button variant="outline" size="sm" className="border-gold/30 text-gold hover:bg-gold/10">
+              <Settings className="h-4 w-4 mr-2" />
+              Quote Builder
+            </Button>
+          </Link>
         </div>
 
         {/* Services grouped by category */}

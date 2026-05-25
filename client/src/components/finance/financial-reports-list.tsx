@@ -1,467 +1,387 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
+import { FileText, Download, BarChart2, TrendingUp, Loader2 } from "lucide-react";
 import DateRangePicker from "@/components/finance/date-range-picker";
 import { DateRange } from "@/types/date-range";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Download, Printer, PieChart, BarChart, Plus } from "lucide-react";
-import { subMonths } from "date-fns";
-import { Input } from "@/components/ui/input";
+import { subMonths, format, startOfYear, endOfYear } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
-// Types for report generation
-interface ReportOptions {
-  name: string;
-  type: string;
-  dateRange: DateRange;
-  groupBy?: string;
-  includeCategories?: string[];
-  includeTaxItems?: boolean;
-  includePendingItems?: boolean;
-  showDetailsView?: boolean;
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const fmt = (n: number) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+
+// IRS rates
+const UTAH_INCOME_TAX = 0.0455;
+const SE_TAX_RATE = 0.153;
+const SE_INCOME_FACTOR = 0.9235;
+const SE_DEDUCTION_FACTOR = 0.5; // half of SE tax is deductible
+
+// ── PDF Generators ─────────────────────────────────────────────────────────────
+
+function generatePLPdf(
+  income: any[],
+  expenses: any[],
+  assets: any[],
+  from: Date,
+  to: Date,
+) {
+  const doc = new jsPDF();
+  const periodLabel = `${format(from, "MM/dd/yyyy")} – ${format(to, "MM/dd/yyyy")}`;
+  const isFullYear = from.getMonth() === 0 && from.getDate() === 1 &&
+    to.getMonth() === 11 && to.getDate() === 31;
+  const taxYear = from.getFullYear();
+
+  // ── Title ──
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Apollo DroneWorks, LLC", 14, 20);
+  doc.setFontSize(13);
+  doc.text("Profit & Loss Statement", 14, 28);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Period: ${periodLabel}`, 14, 35);
+  doc.text(`Generated: ${format(new Date(), "MM/dd/yyyy")}`, 14, 41);
+  doc.setTextColor(0);
+
+  // ── Income section ──
+  const totalIncome = income.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["GROSS INCOME", "Amount"]],
+    body: [
+      ...income.map(r => [
+        `${r.description || "Service revenue"}${r.client ? ` — ${r.client}` : ""}`,
+        fmt(parseFloat(r.amount || 0)),
+      ]),
+      [{ content: "Total Gross Income", styles: { fontStyle: "bold" } }, { content: fmt(totalIncome), styles: { fontStyle: "bold", textColor: [0, 120, 0] } }],
+    ],
+    theme: "striped",
+    headStyles: { fillColor: [30, 60, 100], textColor: 255, fontStyle: "bold" },
+    columnStyles: { 1: { halign: "right", cellWidth: 45 } },
+  });
+
+  // ── Expenses section ──
+  const totalExpenses = expenses.reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+
+  // Annual depreciation from active assets (prorated for partial year)
+  const days = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+  const yearFraction = days / 365;
+  const totalAnnualDepr = assets
+    .filter((a: any) => a.isActive)
+    .reduce((s: number, a: any) => s + a.annualDepreciation * yearFraction, 0);
+
+  const expenseRows = expenses.map(r => [
+    r.description || r.vendor || "Expense",
+    r.date ? format(new Date(r.date), "MM/dd/yy") : "",
+    fmt(parseFloat(r.amount || 0)),
+  ]);
+
+  if (totalAnnualDepr > 0) {
+    expenseRows.push([`Depreciation (${days}d)`, "", fmt(totalAnnualDepr)]);
+  }
+  expenseRows.push([
+    { content: "Total Expenses", styles: { fontStyle: "bold" } as any },
+    "",
+    { content: fmt(totalExpenses + totalAnnualDepr), styles: { fontStyle: "bold", textColor: [180, 0, 0] } as any },
+  ]);
+
+  const tableEnd = (doc as any).lastAutoTable.finalY + 6;
+
+  autoTable(doc, {
+    startY: tableEnd,
+    head: [["EXPENSES", "Date", "Amount"]],
+    body: expenseRows,
+    theme: "striped",
+    headStyles: { fillColor: [30, 60, 100], textColor: 255, fontStyle: "bold" },
+    columnStyles: { 2: { halign: "right", cellWidth: 45 } },
+  });
+
+  // ── Net profit + tax estimate ──
+  const netProfit = totalIncome - totalExpenses - totalAnnualDepr;
+
+  // SE tax (Schedule C single-member LLC)
+  const seBase = netProfit * SE_INCOME_FACTOR;
+  const seTax = Math.max(0, seBase * SE_TAX_RATE);
+  const seDeduction = seTax * SE_DEDUCTION_FACTOR;
+  const adjustedIncome = netProfit - seDeduction;
+  const utahTax = Math.max(0, adjustedIncome * UTAH_INCOME_TAX);
+  const totalTaxEstimate = seTax + utahTax;
+
+  const summaryY = (doc as any).lastAutoTable.finalY + 10;
+
+  autoTable(doc, {
+    startY: summaryY,
+    head: [["SUMMARY", ""]],
+    body: [
+      ["Gross Income", fmt(totalIncome)],
+      ["Total Expenses", fmt(totalExpenses + totalAnnualDepr)],
+      [{ content: "Net Profit", styles: { fontStyle: "bold" } }, { content: fmt(netProfit), styles: { fontStyle: "bold", textColor: netProfit >= 0 ? [0, 120, 0] : [180, 0, 0] } }],
+      ["", ""],
+      ["Self-Employment Tax (15.3% × 92.35%)", fmt(seTax)],
+      ["SE Tax Deduction (half)", `(${fmt(seDeduction)})`],
+      ["Utah Income Tax (4.55%)", fmt(utahTax)],
+      [{ content: "Estimated Total Tax", styles: { fontStyle: "bold" } }, { content: fmt(totalTaxEstimate), styles: { fontStyle: "bold", textColor: [180, 0, 0] } }],
+      [{ content: "Net After Tax", styles: { fontStyle: "bold" } }, { content: fmt(netProfit - totalTaxEstimate), styles: { fontStyle: "bold" } }],
+    ],
+    theme: "plain",
+    headStyles: { fillColor: [30, 60, 100], textColor: 255, fontStyle: "bold" },
+    columnStyles: { 1: { halign: "right", cellWidth: 55 } },
+  });
+
+  doc.setFontSize(8);
+  doc.setTextColor(130);
+  const disclaimer = isFullYear
+    ? "Schedule C (Form 1040) — Single-Member LLC. Depreciation computed per asset depreciation method. SE tax estimated at 15.3% × 92.35% of net profit. Utah flat income tax at 4.55%. Consult your CPA before filing."
+    : "Estimates only. Annualized SE and Utah income tax shown for full-year period. Consult your CPA.";
+  const splitLines = doc.splitTextToSize(disclaimer, 180);
+  doc.text(splitLines, 14, (doc as any).lastAutoTable.finalY + 8);
+
+  doc.save(`ApolloDeW_PL_${format(from, "yyyy-MM")}_to_${format(to, "yyyy-MM")}.pdf`);
 }
 
-const FinancialReportsList = () => {
-  // Set default date range to last 3 months
-  const defaultDateRange = {
-    from: subMonths(new Date(), 3),
-    to: new Date(),
-  };
-  
-  const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange);
-  const [showNewReportDialog, setShowNewReportDialog] = useState(false);
-  const [reportOptions, setReportOptions] = useState<ReportOptions>({
-    name: "",
-    type: "income-expense",
-    dateRange: defaultDateRange,
-    groupBy: "month",
-    includeTaxItems: true,
-    includePendingItems: false,
-    showDetailsView: false,
-  });
+function generateDepreciationPdf(assets: any[]) {
+  const doc = new jsPDF();
 
-  // Fetch financial reports data
-  const { data: reports, isLoading } = useQuery<any[]>({
-    queryKey: ["/api/financial-reports"],
-  });
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Apollo DroneWorks, LLC", 14, 20);
+  doc.setFontSize(13);
+  doc.text("Asset Depreciation Schedule", 14, 28);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Generated: ${format(new Date(), "MM/dd/yyyy")}`, 14, 35);
+  doc.setTextColor(0);
 
-  // Fetch expense categories for the report filter options
-  const { data: categories } = useQuery<any[]>({
-    queryKey: ["/api/expense-categories"],
-  });
+  const active = assets.filter((a: any) => a.isActive);
 
-  const handleCreateReport = () => {
-    // Logic to create report would go here (to be implemented)
-    setShowNewReportDialog(false);
-    // Reset report options
-    setReportOptions({
-      name: "",
-      type: "income-expense",
-      dateRange: defaultDateRange,
-      groupBy: "month",
-      includeTaxItems: true,
-      includePendingItems: false,
-      showDetailsView: false,
+  let startY = 45;
+  for (const asset of active) {
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${asset.name} (${asset.type})`, 14, startY);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(
+      `Purchased ${asset.purchaseDate?.slice(0, 10)} · ${asset.depreciationMethod} · ` +
+      `Cost: ${fmt(asset.purchasePrice)} · Salvage: ${fmt(asset.salvageValue)} · ` +
+      `Book Value Today: ${fmt(asset.currentBookValue)}`,
+      14, startY + 5
+    );
+    doc.setTextColor(0);
+
+    autoTable(doc, {
+      startY: startY + 8,
+      head: [["Year", "Opening Value", "Annual Depr.", "Accumulated", "Closing Value"]],
+      body: (asset.schedule || []).map((row: any) => [
+        String(row.year),
+        fmt(row.bookValue),
+        fmt(row.annualDepreciation),
+        fmt(row.accumulatedDepreciation),
+        fmt(row.remainingValue),
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: [30, 60, 100], textColor: 255, fontSize: 8 },
+      bodyStyles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 18 },
+        1: { halign: "right" },
+        2: { halign: "right" },
+        3: { halign: "right" },
+        4: { halign: "right" },
+      },
+      margin: { left: 14, right: 14 },
     });
-  };
 
-  const renderReportTypeIcon = (type: string) => {
-    switch (type) {
-      case "income-expense":
-        return <BarChart className="h-5 w-5 text-blue-500" />;
-      case "profit-loss":
-        return <PieChart className="h-5 w-5 text-green-500" />;
-      case "tax-summary":
-        return <FileText className="h-5 w-5 text-amber-500" />;
-      default:
-        return <FileText className="h-5 w-5 text-gray-500" />;
+    startY = (doc as any).lastAutoTable.finalY + 12;
+    if (startY > 240) {
+      doc.addPage();
+      startY = 20;
     }
-  };
+  }
 
-  const formatReportType = (type: string) => {
-    switch (type) {
-      case "income-expense":
-        return "Income & Expense";
-      case "profit-loss":
-        return "Profit & Loss";
-      case "tax-summary":
-        return "Tax Summary";
-      case "expense-category":
-        return "Expense by Category";
-      case "client-profitability":
-        return "Client Profitability";
-      default:
-        return type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
+  // Summary
+  const totalCost = active.reduce((s: number, a: any) => s + a.purchasePrice, 0);
+  const totalBookValue = active.reduce((s: number, a: any) => s + a.currentBookValue, 0);
+  const totalDeprToDate = active.reduce((s: number, a: any) => s + a.totalDepreciationToDate, 0);
+  const totalAnnual = active.reduce((s: number, a: any) => s + a.annualDepreciation, 0);
+  const totalMonthly = active.reduce((s: number, a: any) => s + a.monthlyDepreciation, 0);
+
+  autoTable(doc, {
+    startY: startY,
+    head: [["TOTALS", ""]],
+    body: [
+      ["Total Original Cost", fmt(totalCost)],
+      ["Total Depreciation to Date", fmt(totalDeprToDate)],
+      ["Total Current Book Value", fmt(totalBookValue)],
+      ["Annual Depreciation (this year)", fmt(totalAnnual)],
+      ["Monthly Depreciation", fmt(totalMonthly)],
+    ],
+    theme: "plain",
+    headStyles: { fillColor: [30, 60, 100], textColor: 255, fontStyle: "bold" },
+    columnStyles: { 1: { halign: "right", cellWidth: 55 } },
+  });
+
+  doc.save(`ApolloDeW_Depreciation_${format(new Date(), "yyyy")}.pdf`);
+}
+
+// ── Report Cards ───────────────────────────────────────────────────────────────
+const REPORT_TYPES = [
+  {
+    id: "pl",
+    title: "Profit & Loss Statement",
+    description: "Gross income, all expenses, depreciation, net profit, and tax estimate. Schedule C–ready.",
+    icon: TrendingUp,
+    color: "text-green-400",
+    bg: "bg-green-500/10",
+  },
+  {
+    id: "depreciation",
+    title: "Asset Depreciation Schedule",
+    description: "Full year-by-year depreciation table for each business asset. IRS Form 4562 support.",
+    icon: BarChart2,
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+  },
+];
+
+// ── Main Component ─────────────────────────────────────────────────────────────
+const FinancialReportsList = () => {
+  const defaultRange: DateRange = {
+    from: startOfYear(new Date()),
+    to: endOfYear(new Date()),
   };
+  const [dateRange, setDateRange] = useState<DateRange>(defaultRange);
+  const [generating, setGenerating] = useState<string | null>(null);
+
+  const year = dateRange.from?.getFullYear() ?? new Date().getFullYear();
+
+  const { data: income = [] } = useQuery<any[]>({
+    queryKey: ["/api/income", { startDate: dateRange.from?.toISOString().split("T")[0], endDate: dateRange.to?.toISOString().split("T")[0] }],
+  });
+  const { data: expenses = [] } = useQuery<any[]>({
+    queryKey: ["/api/expenses", { startDate: dateRange.from?.toISOString().split("T")[0], endDate: dateRange.to?.toISOString().split("T")[0] }],
+  });
+  const { data: assets = [] } = useQuery<any[]>({
+    queryKey: ["/api/admin/assets"],
+  });
+
+  const totalIncome = income.reduce((s: number, r: any) => s + parseFloat(r.amount || 0), 0);
+  const totalExpenses = expenses.reduce((s: number, r: any) => s + parseFloat(r.amount || 0), 0);
+  const netProfit = totalIncome - totalExpenses;
+
+  async function generate(type: string) {
+    setGenerating(type);
+    try {
+      if (type === "pl") {
+        generatePLPdf(income, expenses, assets, dateRange.from!, dateRange.to!);
+      } else if (type === "depreciation") {
+        generateDepreciationPdf(assets);
+      }
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+    } finally {
+      setGenerating(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="mb-4">
-          <h2 className="text-2xl font-bold">Financial Reports</h2>
+      {/* Date range + quick stats */}
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold mb-0.5">Financial Reports</h2>
+          <p className="text-sm text-muted-foreground">Select a period and download a formatted PDF report.</p>
         </div>
-        <div className="mb-6">
-          <Dialog open={showNewReportDialog} onOpenChange={setShowNewReportDialog}>
-          <DialogContent className="max-w-3xl">
-            <DialogHeader>
-              <DialogTitle>Generate Financial Report</DialogTitle>
-              <DialogDescription>
-                Configure your report parameters below.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-6 py-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="report-name">Report Name</Label>
-                  <Input 
-                    id="report-name" 
-                    placeholder="Q2 Financial Summary"
-                    value={reportOptions.name}
-                    onChange={(e) => setReportOptions({
-                      ...reportOptions,
-                      name: e.target.value
-                    })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="report-type">Report Type</Label>
-                  <Select 
-                    value={reportOptions.type}
-                    onValueChange={(value) => setReportOptions({
-                      ...reportOptions,
-                      type: value
-                    })}
-                  >
-                    <SelectTrigger id="report-type">
-                      <SelectValue placeholder="Select report type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        <SelectLabel>Standard Reports</SelectLabel>
-                        <SelectItem value="income-expense">Income & Expense</SelectItem>
-                        <SelectItem value="profit-loss">Profit & Loss</SelectItem>
-                        <SelectItem value="tax-summary">Tax Summary</SelectItem>
-                        <SelectItem value="expense-category">Expense by Category</SelectItem>
-                      </SelectGroup>
-                      <SelectGroup>
-                        <SelectLabel>Advanced Reports</SelectLabel>
-                        <SelectItem value="client-profitability">Client Profitability</SelectItem>
-                        <SelectItem value="service-revenue">Service Revenue</SelectItem>
-                        <SelectItem value="cash-flow">Cash Flow</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Date Range</Label>
-                  <DateRangePicker 
-                    dateRange={reportOptions.dateRange}
-                    onChange={(range) => {
-                      if (range.from && range.to) {
-                        setReportOptions({
-                          ...reportOptions,
-                          dateRange: range
-                        });
-                      }
-                    }}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="group-by">Group By</Label>
-                  <Select 
-                    value={reportOptions.groupBy}
-                    onValueChange={(value) => setReportOptions({
-                      ...reportOptions,
-                      groupBy: value
-                    })}
-                  >
-                    <SelectTrigger id="group-by">
-                      <SelectValue placeholder="Select grouping" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="day">Day</SelectItem>
-                      <SelectItem value="week">Week</SelectItem>
-                      <SelectItem value="month">Month</SelectItem>
-                      <SelectItem value="quarter">Quarter</SelectItem>
-                      <SelectItem value="year">Year</SelectItem>
-                      <SelectItem value="category">Category</SelectItem>
-                      <SelectItem value="client">Client</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="flex flex-col space-y-1.5">
-                <Label>Additional Options</Label>
-                <div className="flex flex-wrap gap-4 mt-2">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="include-tax-items"
-                      className="h-4 w-4 rounded border-gray-300"
-                      checked={reportOptions.includeTaxItems}
-                      onChange={(e) => setReportOptions({
-                        ...reportOptions,
-                        includeTaxItems: e.target.checked
-                      })}
-                    />
-                    <Label htmlFor="include-tax-items" className="text-sm font-medium">
-                      Include tax-deductible items
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="include-pending"
-                      className="h-4 w-4 rounded border-gray-300"
-                      checked={reportOptions.includePendingItems}
-                      onChange={(e) => setReportOptions({
-                        ...reportOptions,
-                        includePendingItems: e.target.checked
-                      })}
-                    />
-                    <Label htmlFor="include-pending" className="text-sm font-medium">
-                      Include pending transactions
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="show-details"
-                      className="h-4 w-4 rounded border-gray-300"
-                      checked={reportOptions.showDetailsView}
-                      onChange={(e) => setReportOptions({
-                        ...reportOptions,
-                        showDetailsView: e.target.checked
-                      })}
-                    />
-                    <Label htmlFor="show-details" className="text-sm font-medium">
-                      Show detailed view
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowNewReportDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleCreateReport}>
-                Generate Report
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="flex items-center gap-3">
+          <Label className="text-sm text-muted-foreground whitespace-nowrap">Period:</Label>
+          <DateRangePicker dateRange={dateRange} onChange={setDateRange} />
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Card key={i} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-1/2" />
-                <Skeleton className="h-4 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-24 w-full" />
-              </CardContent>
-              <CardFooter>
-                <Skeleton className="h-8 w-full" />
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : reports && reports.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {reports.map((report) => (
-            <Card key={report.id} className="overflow-hidden">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{report.name}</CardTitle>
-                  {renderReportTypeIcon(report.type)}
-                </div>
-                <CardDescription>
-                  {formatReportType(report.type)} • {new Date(report.createdAt).toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground">
-                  <p>
-                    {new Date(report.dateRange.from).toLocaleDateString()} - {new Date(report.dateRange.to).toLocaleDateString()}
-                  </p>
-                  <p className="mt-1">
-                    {report.summary?.totalItems || 0} transactions included
-                  </p>
-                  {report.summary?.totalIncome !== undefined && (
-                    <div className="mt-2">
-                      <div className="flex justify-between">
-                        <span>Income:</span>
-                        <span className="font-medium text-green-600">
-                          ${Number(report.summary.totalIncome).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Expenses:</span>
-                        <span className="font-medium text-red-600">
-                          ${Number(report.summary.totalExpenses).toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between border-t mt-1 pt-1">
-                        <span>Net:</span>
-                        <span className={`font-medium ${Number(report.summary.netProfit) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          ${Number(report.summary.netProfit).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between py-2">
-                <Button variant="outline" size="sm">
-                  <FileText className="mr-2 h-4 w-4" />
-                  View
-                </Button>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Printer className="h-4 w-4" />
-                    <span className="sr-only">Print</span>
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4" />
-                    <span className="sr-only">Download</span>
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
-          <div className="rounded-full bg-muted p-6">
-            <FileText className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold">No reports yet</h3>
-            <p className="text-muted-foreground max-w-md mx-auto mb-4">
-              Generate your first financial report to get insights into your business performance.
-            </p>
-            <Button onClick={() => setShowNewReportDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Report
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Live summary for selected period */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Income</p>
+            <p className="text-xl font-bold text-green-600">{fmt(totalIncome)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Expenses</p>
+            <p className="text-xl font-bold text-red-600">{fmt(totalExpenses)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-muted-foreground mb-1">Net Profit</p>
+            <p className={`text-xl font-bold ${netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>{fmt(netProfit)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Sample Report Preview Section */}
-      <Card className="mt-8">
-        <CardHeader>
-          <CardTitle>Sample Income & Expense Report</CardTitle>
-          <CardDescription>Preview of a sample Income & Expense report</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Month</TableHead>
-                  <TableHead className="text-right">Income</TableHead>
-                  <TableHead className="text-right">Expenses</TableHead>
-                  <TableHead className="text-right">Net</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Jan 2025</TableCell>
-                  <TableCell className="text-right">$2,840.00</TableCell>
-                  <TableCell className="text-right">$1,240.00</TableCell>
-                  <TableCell className="text-right text-green-600">$1,600.00</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Feb 2025</TableCell>
-                  <TableCell className="text-right">$3,150.00</TableCell>
-                  <TableCell className="text-right">$1,895.00</TableCell>
-                  <TableCell className="text-right text-green-600">$1,255.00</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Mar 2025</TableCell>
-                  <TableCell className="text-right">$4,230.00</TableCell>
-                  <TableCell className="text-right">$2,340.00</TableCell>
-                  <TableCell className="text-right text-green-600">$1,890.00</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Apr 2025</TableCell>
-                  <TableCell className="text-right">$5,120.00</TableCell>
-                  <TableCell className="text-right">$2,680.00</TableCell>
-                  <TableCell className="text-right text-green-600">$2,440.00</TableCell>
-                </TableRow>
-                <TableRow className="font-medium bg-muted/50">
-                  <TableCell>Total</TableCell>
-                  <TableCell className="text-right">$15,340.00</TableCell>
-                  <TableCell className="text-right">$8,155.00</TableCell>
-                  <TableCell className="text-right text-green-600">$7,185.00</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between py-2">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              Report Generated: April 15, 2025
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Printer className="mr-2 h-4 w-4" />
-              Print
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              Download
-            </Button>
-          </div>
-        </CardFooter>
-      </Card>
+      {/* Report type cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {REPORT_TYPES.map(rt => {
+          const Icon = rt.icon;
+          const isLoading = generating === rt.id;
+          return (
+            <Card key={rt.id} className="border">
+              <CardHeader className="pb-3">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg ${rt.bg}`}>
+                    <Icon className={`h-5 w-5 ${rt.color}`} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-base">{rt.title}</CardTitle>
+                    <CardDescription className="text-sm mt-0.5">{rt.description}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                {rt.id === "pl" && (
+                  <div className="text-xs text-muted-foreground mb-3 grid grid-cols-2 gap-2">
+                    <div>Period: {dateRange.from ? format(dateRange.from, "MMM d, yyyy") : "—"} – {dateRange.to ? format(dateRange.to, "MMM d, yyyy") : "—"}</div>
+                    <div>{income.length} income entries · {expenses.length} expense entries</div>
+                  </div>
+                )}
+                {rt.id === "depreciation" && (
+                  <div className="text-xs text-muted-foreground mb-3">
+                    {(assets as any[]).filter((a: any) => a.isActive).length} active assets tracked
+                  </div>
+                )}
+                <Button
+                  onClick={() => generate(rt.id)}
+                  disabled={isLoading}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Download PDF
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Reports pull live data from Income and Expenses tabs. P&L includes estimated SE tax (15.3%) and Utah income tax (4.55%).
+        Depreciation amounts are calculated from the Asset Registry. Consult a CPA before filing.
+      </p>
     </div>
   );
 };

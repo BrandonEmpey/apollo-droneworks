@@ -1,5 +1,8 @@
 import express from "express";
 import { storage } from "./storage";
+import { db } from "./db";
+import { customers } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 import { 
@@ -92,13 +95,34 @@ export function registerClientProjectRoutes(app: express.Express) {
   app.post("/api/client-projects", async (req, res) => {
     try {
       if (req.isAuthenticated()) {
-        const clientId = req.body.clientId || req.user.id;
-        
-        // Regular users can only create projects for themselves
-        if (!req.user.isAdmin && clientId !== req.user.id) {
-          return res.status(403).send("Forbidden");
+        let clientId = req.body.clientId ? parseInt(req.body.clientId) : null;
+
+        if (!clientId) {
+          if (req.user.isAdmin) {
+            return res.status(400).json({ message: "Please select a client for this project." });
+          }
+          // For regular users, resolve their customers record
+          const [customerRecord] = await db.select({ id: customers.id })
+            .from(customers)
+            .where(eq(customers.userId, req.user.id))
+            .limit(1);
+          if (!customerRecord) {
+            return res.status(400).json({ message: "No customer profile found for your account. Please contact support." });
+          }
+          clientId = customerRecord.id;
         }
-        
+
+        // Regular users can only create projects for themselves
+        if (!req.user.isAdmin) {
+          const [customerRecord] = await db.select({ id: customers.id })
+            .from(customers)
+            .where(eq(customers.userId, req.user.id))
+            .limit(1);
+          if (!customerRecord || customerRecord.id !== clientId) {
+            return res.status(403).send("Forbidden");
+          }
+        }
+
         const validatedData = insertClientProjectSchema.parse({
           ...req.body,
           clientId

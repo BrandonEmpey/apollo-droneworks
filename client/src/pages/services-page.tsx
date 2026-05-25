@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { SITE_URL, OG_IMAGE, BUSINESS_NAME, breadcrumbSchema } from "@/lib/structured-data";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import ServicesSection from "@/components/services-section";
@@ -7,8 +8,17 @@ export default function ServicesPage() {
   return (
     <>
       <Helmet>
-        <title>Our Services | Apollo DroneWorks</title>
-        <meta name="description" content="Explore our full range of professional drone services including real estate photography, aerial videography, photogrammetry, construction monitoring, and more." />
+        <title>Drone Services in Southern Utah | Apollo DroneWorks</title>
+        <meta name="description" content="Professional drone services in Southern Utah — aerial real estate photography, videography, photogrammetry, 3D mapping, and construction monitoring. Get a quote today." />
+        <link rel="canonical" href={`${SITE_URL}/services`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content="Drone Services in Southern Utah | Apollo DroneWorks" />
+        <meta property="og:description" content="Professional drone services — aerial photography, videography, photogrammetry and 3D mapping for real estate, construction, and commercial clients." />
+        <meta property="og:url" content={`${SITE_URL}/services`} />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <script type="application/ld+json">{JSON.stringify(breadcrumbSchema([{ name: "Home", item: SITE_URL }, { name: "Services", item: `${SITE_URL}/services` }]))}</script>
       </Helmet>
       
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">

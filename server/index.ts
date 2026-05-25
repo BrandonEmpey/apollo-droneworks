@@ -18,6 +18,10 @@ import { migrateTiers } from "./migrations/add-subscription-tiers";
 import { main as migrateProcessSteps } from "./migrations/add-process-steps";
 import { main as migrateFeaturedBadge } from "./migrations/add-featured-badge";
 import { main as migrateClientProjects } from "./migrations/add-client-projects";
+import { runProjectWorkflowMigration } from "./migrations/add-project-workflow";
+import { runBusinessAssetsMigration } from "./migrations/add-business-assets";
+import { addSocialPostFields } from "./migrations/add-social-post-fields";
+import { addServiceDeliverables } from "./migrations/add-service-deliverables";
 import { addTaskNotesFields } from "./migrations/add-task-notes-fields";
 import { addHeroSlides } from "./migrations/add-hero-slides";
 import { seedHeroSlides } from "./migrations/seed-hero-slides";
@@ -42,6 +46,7 @@ app.use('/tours', express.static('public/tours'));
 // browser tries to render the app's HTML as a PDF/image and shows a misleading
 // "Failed to load" error.
 app.use('/uploads', express.static('public/uploads'));
+app.use('/uploads/project-files', express.static('uploads/project-files'));
 app.use('/uploads', (_req, res) => {
   res.status(404).send('File not found');
 });
@@ -212,6 +217,34 @@ app.use((req, res, next) => {
       console.log("Client projects migration completed successfully");
     } catch (error) {
       console.error("Error with client projects migration:", error);
+    }
+
+    // Project workflow tables (deliverables, files, drone type, due dates)
+    try {
+      await runProjectWorkflowMigration();
+    } catch (error) {
+      console.error("Error with project workflow migration:", error);
+    }
+
+    // Business asset registry (drones, vehicles, equipment with depreciation)
+    try {
+      await runBusinessAssetsMigration();
+    } catch (error) {
+      console.error("Error with business assets migration:", error);
+    }
+
+    // Service-level deliverable templates
+    try {
+      await addServiceDeliverables();
+    } catch (error) {
+      console.error("Error with service deliverables migration:", error);
+    }
+
+    // Social post blog link + platform fields
+    try {
+      await addSocialPostFields();
+    } catch (error) {
+      console.error("Error with social post fields migration:", error);
     }
     
     // Add task notes fields

@@ -5,6 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Palette, Save, RotateCcw, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -151,6 +161,7 @@ export default function ThemeEditor() {
   const [theme, setTheme] = useState<ThemeConfig>(defaultTheme);
   const [colorHistory, setColorHistory] = useState<ColorHistory>({});
   const [previewMode, setPreviewMode] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -322,7 +333,7 @@ export default function ThemeEditor() {
             <span>Reset</span>
           </Button>
           <Button
-            onClick={saveTheme}
+            onClick={() => setConfirmOpen(true)}
             className="flex items-center space-x-2"
           >
             <Save className="h-4 w-4" />
@@ -668,6 +679,28 @@ export default function ThemeEditor() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="bg-[#132642] border-gold-dark/30 text-offwhite">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gold-gradient">Save Theme Changes?</AlertDialogTitle>
+            <AlertDialogDescription className="text-offwhite/70">
+              This will overwrite the currently saved theme and apply all colour changes site-wide. Are you sure you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-gold-dark/40 text-offwhite hover:bg-gold-dark/10">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-gold text-black hover:bg-gold/90"
+              onClick={saveTheme}
+            >
+              Yes, Save Theme
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

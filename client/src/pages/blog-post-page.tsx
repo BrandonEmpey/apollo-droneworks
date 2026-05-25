@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Helmet } from "react-helmet-async";
+import { articleSchema, SITE_URL, BUSINESS_NAME } from "@/lib/structured-data";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRoute } from "wouter";
 import { BlogPost } from "@shared/schema";
@@ -106,12 +107,21 @@ export default function BlogPostPage() {
       <Helmet>
         <title>{post.title} | Apollo DroneWorks Blog</title>
         <meta name="description" content={post.excerpt} />
+        <link rel="canonical" href={`${SITE_URL}/blog/${post.id}`} />
+        {/* Open Graph */}
+        <meta property="og:type" content="article" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt} />
         <meta property="og:image" content={post.imageUrl} />
-        <meta property="og:url" content={currentUrl} />
-        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`${SITE_URL}/blog/${post.id}`} />
+        {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={post.title} />
+        <meta name="twitter:description" content={post.excerpt} />
+        <meta name="twitter:image" content={post.imageUrl} />
+        {/* Structured data */}
+        <script type="application/ld+json">{JSON.stringify(articleSchema({ id: post.id, title: post.title, excerpt: post.excerpt, imageUrl: post.imageUrl, createdAt: post.createdAt, updatedAt: post.updatedAt }))}</script>
       </Helmet>
 
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">

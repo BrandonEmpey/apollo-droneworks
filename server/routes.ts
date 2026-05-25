@@ -6,7 +6,7 @@ import { z } from "zod";
 import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth } from "./auth";
-import { registerAnalyticsRoutes, synchronizeFinancialWithAnalytics } from "./analytics-routes";
+import { registerAnalyticsRoutes, synchronizeFinancialWithAnalytics, syncIncomeToProjectAnalytics } from "./analytics-routes";
 import { syncBookingIncome } from "./booking-finance-sync";
 
 import { registerPayrollRoutes } from "./payroll/routes";
@@ -14,7 +14,12 @@ import { registerAdCampaignRoutes } from "./ai/ad-campaign-routes";
 import { registerCRMRoutes } from "./crm-routes";
 import { registerClientRoutes } from "./client-routes";
 import { registerClientProjectRoutes } from "./client-project-routes";
+import { registerProjectWorkflowRoutes } from "./project-workflow-routes";
+import { registerAssetRoutes } from "./asset-routes";
+import { registerAdminStatsRoutes } from "./admin-stats-routes";
 import { registerNotificationRoutes } from "./notification-routes";
+import { registerServiceDeliverableRoutes } from "./service-deliverable-routes";
+import { registerFileManagementRoutes } from "./file-management-routes";
 import { registerServiceAnalyticsRoutes } from "./service-analytics-routes";
 import { registerAddonRoutes } from "./addon-routes";
 import { registerUploadRoutes } from "./upload-routes";
@@ -73,6 +78,7 @@ import {
   insertAnalyticsReportSchema,
   insertGeneratedContentSchema,
   // Tables
+  socialPosts,
   expenseCategories,
   expenses,
   income,
@@ -187,7 +193,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register client project routes
   registerClientProjectRoutes(app);
-  
+  registerProjectWorkflowRoutes(app);
+  registerAssetRoutes(app);
+  registerAdminStatsRoutes(app);
+  registerServiceDeliverableRoutes(app);
+  registerFileManagementRoutes(app);
+
   // Register notification routes
   registerNotificationRoutes(app);
   registerServiceAnalyticsRoutes(app);
@@ -2280,13 +2291,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (event.type === 'payment_intent.succeeded') {
         const paymentIntent = event.data.object;
         const bookingId = paymentIntent.metadata.bookingId;
-        
+
         if (bookingId) {
           await storage.updateBooking(parseInt(bookingId), {
             paymentStatus: 'paid'
           });
+
+          try {
+            const booking = await storage.getBooking(parseInt(bookingId));
+            if (booking && booking.customerEmail) {
+              const service = booking.serviceId ? await storage.getService(booking.serviceId) : null;
+              await sendBookingConfirmationEmail({
+                toEmail: booking.customerEmail,
+                toName: booking.customerName || "Valued Client",
+                bookingId: booking.id,
+                serviceName: service?.name || "Drone Service",
+                scheduledDate: booking.scheduledDate
+                  ? new Date(booking.scheduledDate).toLocaleDateString()
+                  : "TBD",
+                totalAmount: booking.totalAmount
+                  ? parseFloat(booking.totalAmount).toFixed(2)
+                  : "0.00",
+              });
+            }
+          } catch (emailErr) {
+            console.error("Booking confirmation email failed (non-fatal):", emailErr);
+          }
         }
-        
+
         console.log('Payment succeeded for booking:', bookingId);
       }
       
@@ -2652,6 +2684,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const posts = await storage.getSocialPosts(req.user.id);
       res.json(posts);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Fetch auto-generated social captions linked to a specific blog post
+  app.get("/api/admin/social-captions/:blogPostId", async (req, res) => {
+    if (!req.isAuthenticated() || !(req.user as any)?.isAdmin) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    try {
+      const blogPostId = parseInt(req.params.blogPostId);
+      const captions = await db
+        .select()
+        .from(socialPosts)
+        .where(eq(socialPosts.blogPostId, blogPostId))
+        .orderBy(socialPosts.platform);
+      res.json(captions);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -3318,10 +3368,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertIncomeSchema.parse(incomeData);
       
       const result = await db.insert(income).values(validatedData).returning();
-      
-      // Synchronize financial data with analytics data
-      await synchronizeFinancialWithAnalytics();
-      
+
+      await syncIncomeToProjectAnalytics(result[0].bookingId ?? null);
+
       res.status(201).json(result[0]);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -3354,10 +3403,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .where(eq(income.id, id))
         .returning();
-      
-      // Synchronize financial data with analytics data
-      await synchronizeFinancialWithAnalytics();
-      
+
+      await syncIncomeToProjectAnalytics(result[0].bookingId ?? null);
+
       res.json(result[0]);
     } catch (error: any) {
       res.status(400).json({ message: error.message });
@@ -3380,11 +3428,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have permission to delete this income entry" });
       }
       
+      const deletedBookingId = existingIncome[0].bookingId ?? null;
       await db.delete(income).where(eq(income.id, id));
-      
-      // Synchronize financial data with analytics data
-      await synchronizeFinancialWithAnalytics();
-      
+      await syncIncomeToProjectAnalytics(deletedBookingId);
+
       res.status(204).send();
     } catch (error: any) {
       res.status(500).json({ message: error.message });
@@ -4479,6 +4526,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error generating ZIP:", error);
       res.status(500).json({ message: "Failed to generate ZIP" });
     }
+  });
+
+  // ── SITEMAP ────────────────────────────────────────────────────────────────
+  app.get("/sitemap.xml", async (_req, res) => {
+    const BASE = process.env.SITE_URL || "https://apollodroneworks.com";
+    const now = new Date().toISOString().split("T")[0];
+
+    const staticUrls = [
+      { loc: "/",             priority: "1.0", changefreq: "weekly"  },
+      { loc: "/services",     priority: "0.9", changefreq: "weekly"  },
+      { loc: "/blog",         priority: "0.8", changefreq: "daily"   },
+      { loc: "/gallery",      priority: "0.7", changefreq: "monthly" },
+      { loc: "/about",        priority: "0.6", changefreq: "monthly" },
+      { loc: "/contact",      priority: "0.8", changefreq: "monthly" },
+      { loc: "/testimonials", priority: "0.6", changefreq: "monthly" },
+    ];
+
+    let dynamicEntries = "";
+
+    try {
+      const [services, posts] = await Promise.all([
+        storage.getServices(),
+        storage.getBlogPosts(),
+      ]);
+
+      for (const svc of services) {
+        dynamicEntries += `  <url><loc>${BASE}/services/${svc.id}</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>${now}</lastmod></url>\n`;
+      }
+      for (const post of posts) {
+        const date = post.createdAt ? new Date(post.createdAt).toISOString().split("T")[0] : now;
+        dynamicEntries += `  <url><loc>${BASE}/blog/${post.id}</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>${date}</lastmod></url>\n`;
+      }
+    } catch {
+      // Fall through with static-only sitemap if DB is unavailable
+    }
+
+    const staticEntries = staticUrls
+      .map(u => `  <url><loc>${BASE}${u.loc}</loc><changefreq>${u.changefreq}</changefreq><priority>${u.priority}</priority><lastmod>${now}</lastmod></url>`)
+      .join("\n");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${staticEntries}
+${dynamicEntries}</urlset>`;
+
+    res.setHeader("Content-Type", "application/xml");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(xml);
   });
 
   return httpServer;

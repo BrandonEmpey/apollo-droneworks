@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { SITE_URL, OG_IMAGE, BUSINESS_NAME } from "@/lib/structured-data";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,16 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0b111f]">
       <Helmet>
-        <title>About Apollo DroneWorks - Professional Drone Services</title>
-        <meta name="description" content="Learn about Apollo DroneWorks, a professional drone services company specializing in real estate photography, videography, and photogrammetry." />
+        <title>About Apollo DroneWorks | Southern Utah Drone Services</title>
+        <meta name="description" content="Learn about Apollo DroneWorks — Southern Utah's professional drone services company specializing in aerial photography, videography, photogrammetry, and 3D mapping." />
+        <link rel="canonical" href={`${SITE_URL}/about`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content="About Apollo DroneWorks | Southern Utah Drone Services" />
+        <meta property="og:description" content="Southern Utah's professional drone services company — aerial photography, videography, photogrammetry, and 3D mapping for real estate, construction, and commercial clients." />
+        <meta property="og:url" content={`${SITE_URL}/about`} />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
 
       <Header />

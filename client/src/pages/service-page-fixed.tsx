@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
+import { serviceSchema, SITE_URL, OG_IMAGE, BUSINESS_NAME } from "@/lib/structured-data";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link } from "wouter";
 import { Service, BeforeAfterImage } from "@shared/schema";
@@ -475,8 +476,23 @@ export default function ServicePage() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">
       <Helmet>
-        <title>{service.name} - Apollo DroneWorks</title>
+        <title>{service.name} | Apollo DroneWorks — Southern Utah Drone Services</title>
         <meta name="description" content={service.description} />
+        <link rel="canonical" href={`${SITE_URL}/services/${service.id}`} />
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content={`${service.name} | Apollo DroneWorks`} />
+        <meta property="og:description" content={service.description} />
+        <meta property="og:url" content={`${SITE_URL}/services/${service.id}`} />
+        <meta property="og:image" content={(service as any).imageUrl || OG_IMAGE} />
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${service.name} | Apollo DroneWorks`} />
+        <meta name="twitter:description" content={service.description} />
+        <meta name="twitter:image" content={(service as any).imageUrl || OG_IMAGE} />
+        {/* Structured data */}
+        <script type="application/ld+json">{JSON.stringify(serviceSchema({ id: service.id, name: service.name, description: service.description, price: (service as any).price, imageUrl: (service as any).imageUrl }))}</script>
       </Helmet>
       
       <div className="container mx-auto px-4 py-8 flex-1">

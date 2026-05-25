@@ -4,6 +4,7 @@ import path from "path";
 import { storage } from "../storage";
 import type { BlogPost } from "@shared/schema";
 import { AERIAL_PROMPT_SUFFIX } from "./aerial-image-rule";
+import { generateAndStoreSocialCaptions } from "./social-generator";
 
 const grok = new OpenAI({
   apiKey: process.env.XAI_API_KEY,
@@ -228,5 +229,9 @@ export async function generateBlogPost(
   });
 
   console.log(`[blog-generator] Blog post created with id ${post.id}`);
+
+  // Fire-and-forget: generate social captions in background
+  generateAndStoreSocialCaptions(post).catch(() => {});
+
   return post;
 }

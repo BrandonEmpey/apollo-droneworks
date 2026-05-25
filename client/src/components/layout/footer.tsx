@@ -169,10 +169,10 @@ export default function Footer() {
               <li className="flex items-center">
                 <Mail className="text-gold-gradient mr-3 flex-shrink-0" size={18} />
                 <a
-                  href="mailto:info@apollodroneworks.com"
+                  href="mailto:apollodroneworks@icloud.com"
                   className="text-gray-400 hover:text-gold-gradient transition-colors"
                 >
-                  info@apollodroneworks.com
+                  apollodroneworks@icloud.com
                 </a>
               </li>
               <li className="flex items-start">

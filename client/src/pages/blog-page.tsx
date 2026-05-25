@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { SITE_URL, OG_IMAGE, BUSINESS_NAME } from "@/lib/structured-data";
 import { useQuery } from "@tanstack/react-query";
 import { BlogPost } from "@shared/schema";
 import { BlogCard } from "@/components/ui/blog-card";
@@ -136,8 +137,16 @@ export default function BlogPage() {
   return (
     <>
       <Helmet>
-        <title>Blog | Apollo DroneWorks</title>
-        <meta name="description" content="Latest insights, tips, and updates from the world of professional drone services including real estate photography, construction monitoring, and 3D modeling." />
+        <title>Drone Services Blog | Apollo DroneWorks</title>
+        <meta name="description" content="Expert insights on aerial photography, drone technology, real estate marketing, construction monitoring, and photogrammetry from the Apollo DroneWorks team in Southern Utah." />
+        <link rel="canonical" href={`${SITE_URL}/blog`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content="Drone Services Blog | Apollo DroneWorks" />
+        <meta property="og:description" content="Expert insights on aerial photography, real estate marketing, construction monitoring, and drone technology from Southern Utah's leading drone services company." />
+        <meta property="og:url" content={`${SITE_URL}/blog`} />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
 
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">

@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { ArrowLeft, Users, Palette, Shield, Database, Loader2, Eye, Link2, Save } from "lucide-react";
+import { ArrowLeft, Users, Palette, Shield, Database, Loader2, Eye, Link2, Save, FolderOpen } from "lucide-react";
 import type { BusinessConfig } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -551,6 +551,21 @@ export default function SystemSettings() {
                       <BannerRow key={entry.key} entry={entry} />
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div>
+                    <CardTitle className="text-sm font-medium">File Management</CardTitle>
+                    <CardDescription className="mt-1">Review and purge expired client deliverable files</CardDescription>
+                  </div>
+                  <FolderOpen className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <Link href="/admin/file-management">
+                    <Button size="sm" variant="outline">Manage Expired Files</Button>
+                  </Link>
                 </CardContent>
               </Card>
 

@@ -58,7 +58,7 @@ export function ContactSection() {
                 </div>
                 <div>
                   <h3 className="font-montserrat text-offwhite text-lg">Location</h3>
-                  <p className="text-offwhite/70">123 Skyview Drive, Austin, TX 78701</p>
+                  <p className="text-offwhite/70">Southern Utah, United States</p>
                 </div>
               </div>
               
@@ -68,7 +68,7 @@ export function ContactSection() {
                 </div>
                 <div>
                   <h3 className="font-montserrat text-offwhite text-lg">Email</h3>
-                  <p className="text-offwhite/70">info@apollodroneworks.com</p>
+                  <p className="text-offwhite/70">apollodroneworks@icloud.com</p>
                 </div>
               </div>
               
@@ -78,7 +78,7 @@ export function ContactSection() {
                 </div>
                 <div>
                   <h3 className="font-montserrat text-offwhite text-lg">Phone</h3>
-                  <p className="text-offwhite/70">(512) 555-0123</p>
+                  <p className="text-offwhite/70">(435) 703-5509</p>
                 </div>
               </div>
             </div>

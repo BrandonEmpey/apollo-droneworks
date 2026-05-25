@@ -5,6 +5,43 @@ import { expenses, income, projectAnalytics, clientAnalytics, marketingAnalytics
 import { eq, and, gte, lte, between, sum } from "drizzle-orm";
 
 /**
+ * Targeted sync: when an income record linked to a booking is created/updated/deleted,
+ * re-sum all income for that booking and write the total into the corresponding
+ * project_analytics row. Only touches revenue, profit, and profit_margin — costs
+ * are managed separately (via seeding or manual entry).
+ */
+export async function syncIncomeToProjectAnalytics(bookingId: number | null): Promise<void> {
+  if (!bookingId) return;
+
+  try {
+    const [analyticsRow] = await db.select().from(projectAnalytics)
+      .where(eq(projectAnalytics.bookingId, bookingId));
+    if (!analyticsRow) return;
+
+    const incomeRows = await db.select({ amount: income.amount }).from(income)
+      .where(eq(income.bookingId, bookingId));
+
+    const totalRevenue = incomeRows.reduce(
+      (acc, r) => acc + parseFloat(r.amount ?? "0"), 0
+    );
+    const costs = parseFloat(analyticsRow.costs ?? "0");
+    const profit = totalRevenue - costs;
+    const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
+
+    await db.update(projectAnalytics)
+      .set({
+        revenue: totalRevenue.toString(),
+        profit: profit.toString(),
+        profitMargin,
+        updatedAt: new Date(),
+      })
+      .where(eq(projectAnalytics.id, analyticsRow.id));
+  } catch (err) {
+    console.error("syncIncomeToProjectAnalytics error:", err);
+  }
+}
+
+/**
  * Synchronizes financial data with analytics data
  * This function ensures permanent integration between financial and analytics systems
  */

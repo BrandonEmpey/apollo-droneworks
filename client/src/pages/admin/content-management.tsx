@@ -10,14 +10,102 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Settings, Image, FileText, Wrench, Package, Camera, Video, Play, Upload, Trash2, Plus, Link2, ChevronDown, GripVertical } from "lucide-react";
+import { ArrowLeft, Settings, Image, FileText, Wrench, Package, Camera, Video, Play, Upload, Trash2, Plus, Link2, ChevronDown, GripVertical, Share2, Copy, Check, Instagram, Twitter, Facebook, MessageSquare } from "lucide-react";
 import { formatImageRejectionToast, parseAerialRejectionError } from "@/lib/upload-error";
 import { useToast } from "@/hooks/use-toast";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
-import { Service, Gallery, BlogPost, HeroSlide } from "@shared/schema";
+import { Service, Gallery, BlogPost, HeroSlide, SocialPost, Testimonial } from "@shared/schema";
 import { queryClient as sharedQueryClient } from "@/lib/queryClient";
+import { TestimonialManager } from "@/components/admin/testimonial-manager";
+
+// Blog post card with expandable social captions panel
+function BlogPostCard({ post }: { post: BlogPost }) {
+  const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const { data: captions = [], isLoading } = useQuery<SocialPost[]>({
+    queryKey: [`/api/admin/social-captions/${post.id}`],
+    enabled: expanded,
+  });
+
+  const copyToClipboard = async (text: string, key: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const platformConfig = {
+    instagram: { label: "Instagram", icon: Instagram, color: "text-pink-500" },
+    facebook:  { label: "Facebook",  icon: Facebook,  color: "text-blue-600" },
+    twitter:   { label: "X / Twitter", icon: Twitter, color: "text-sky-500" },
+  } as const;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base leading-snug">{post.title}</CardTitle>
+        <CardDescription className="text-xs">
+          {new Date(post.createdAt).toLocaleDateString()} · {post.category}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          {expanded ? "Hide" : "Show"} social captions
+          <ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+
+        {expanded && (
+          <div className="space-y-3 pt-1 border-t">
+            {isLoading && (
+              <p className="text-xs text-muted-foreground">Loading captions…</p>
+            )}
+            {!isLoading && captions.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No social captions generated yet. Captions are auto-created when Grok generates a blog post.
+              </p>
+            )}
+            {captions.map((caption) => {
+              const cfg = platformConfig[caption.platform as keyof typeof platformConfig];
+              if (!cfg) return null;
+              const PlatformIcon = cfg.icon;
+              const copyKey = `${post.id}-${caption.platform}`;
+              return (
+                <div key={caption.id} className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className={`flex items-center gap-1 text-xs font-medium ${cfg.color}`}>
+                      <PlatformIcon className="h-3.5 w-3.5" />
+                      {cfg.label}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(caption.content, copyKey)}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {copied === copyKey ? (
+                        <><Check className="h-3 w-3 text-green-500" /> Copied</>
+                      ) : (
+                        <><Copy className="h-3 w-3" /> Copy</>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2 whitespace-pre-line line-clamp-4">
+                    {caption.content}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 // Service Carousel Manager Component
 function ServiceCarouselManager({ services }: { services?: Service[] }) {
@@ -560,6 +648,10 @@ export default function ContentManagement() {
     queryKey: ["/api/blog"],
   });
 
+  const { data: testimonials = [] } = useQuery<Testimonial[]>({
+    queryKey: ["/api/testimonials"],
+  });
+
   // Fetch hero slides from the database via the admin endpoint (includes inactive ones)
   const { data: heroSlides = [] } = useQuery<HeroSlide[]>({
     queryKey: ["/api/admin/hero-slides"],
@@ -907,7 +999,7 @@ export default function ContentManagement() {
         </div>
 
         <Tabs defaultValue="services" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="services" className="flex items-center justify-center gap-2">
               <Wrench className="h-4 w-4 opacity-100" />
               <span>Services</span>
@@ -919,6 +1011,10 @@ export default function ContentManagement() {
             <TabsTrigger value="blog" className="flex items-center justify-center gap-2">
               <FileText className="h-4 w-4 opacity-100" />
               <span>Blog Posts</span>
+            </TabsTrigger>
+            <TabsTrigger value="testimonials" className="flex items-center justify-center gap-2">
+              <MessageSquare className="h-4 w-4 opacity-100" />
+              <span>Testimonials</span>
             </TabsTrigger>
             <TabsTrigger value="carousel" className="flex items-center justify-center gap-2">
               <Camera className="h-4 w-4 opacity-100" />
@@ -1002,7 +1098,12 @@ export default function ContentManagement() {
 
           <TabsContent value="blog" className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-semibold">Blog Management</h2>
+              <div>
+                <h2 className="text-2xl font-semibold">Blog Management</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Expand any post to view and copy auto-generated social media captions.
+                </p>
+              </div>
               <Link href="/admin/blog">
                 <Button>
                   <Settings className="h-4 w-4 mr-2" />
@@ -1010,28 +1111,24 @@ export default function ContentManagement() {
                 </Button>
               </Link>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {blogPosts?.map((post) => (
-                <Card key={post.id}>
-                  <CardHeader>
-                    <CardTitle className="text-lg">{post.title}</CardTitle>
-                    <CardDescription>
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {post.content?.substring(0, 100)}...
-                    </p>
-                  </CardContent>
-                </Card>
-              )) || (
+                <BlogPostCard key={post.id} post={post} />
+              ))}
+              {(!blogPosts || blogPosts.length === 0) && (
                 <div className="col-span-full text-center py-8 text-muted-foreground">
-                  No blog posts found. Create your first post to share insights and updates.
+                  No blog posts yet. Posts auto-generated by Grok will appear here with social captions.
                 </div>
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="testimonials" className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">Testimonials</h2>
+            </div>
+            <TestimonialManager testimonials={testimonials} />
           </TabsContent>
 
           <TabsContent value="carousel" className="space-y-6">

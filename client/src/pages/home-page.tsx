@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "wouter";
+import { localBusinessSchema, websiteSchema, SITE_URL, OG_IMAGE, BUSINESS_NAME } from "@/lib/structured-data";
 import { Button } from "@/components/ui/button";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -20,9 +21,27 @@ export default function HomePage() {
   return (
     <>
       <Helmet>
-        <title>Apollo DroneWorks | Professional Drone Services</title>
-        <meta name="description" content="Premium drone services including real estate photography, videography, and photogrammetry. Book your drone service today with Apollo DroneWorks." />
-        <meta name="keywords" content="drone photography, aerial photography, real estate drone, photogrammetry, construction drone, 3D modeling" />
+        <title>Apollo DroneWorks | Professional Drone Services — Southern Utah</title>
+        <meta name="description" content="Premium drone services in Southern Utah — aerial real estate photography, videography, photogrammetry, 3D mapping, and construction monitoring. Book Apollo DroneWorks today." />
+        <meta name="keywords" content="drone photography, aerial photography, real estate drone, photogrammetry, construction drone, 3D modeling, Southern Utah drone services" />
+        <link rel="canonical" href={SITE_URL} />
+        {/* Open Graph */}
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content="Apollo DroneWorks | Professional Drone Services — Southern Utah" />
+        <meta property="og:description" content="Premium drone services in Southern Utah — aerial real estate photography, videography, photogrammetry, 3D mapping, and construction monitoring." />
+        <meta property="og:url" content={SITE_URL} />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Apollo DroneWorks | Professional Drone Services" />
+        <meta name="twitter:description" content="Premium drone services in Southern Utah — aerial photography, videography, and photogrammetry." />
+        <meta name="twitter:image" content={OG_IMAGE} />
+        {/* Structured data */}
+        <script type="application/ld+json">{JSON.stringify(localBusinessSchema())}</script>
+        <script type="application/ld+json">{JSON.stringify(websiteSchema())}</script>
       </Helmet>
 
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">
@@ -71,8 +90,7 @@ export default function HomePage() {
           <BlogPreviewSection />
           <FeaturesSection />
           <BookingSection />
-          {/* Testimonials temporarily hidden until real customer testimonials are added */}
-          {/* <TestimonialsSection /> */}
+          <TestimonialsSection />
           <ContactSection />
         </main>
         

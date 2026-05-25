@@ -4,6 +4,11 @@ import App from "./App";
 import "./index.css";
 import "leaflet/dist/leaflet.css";
 
+// Clear any inline --primary override that the theme editor may have accidentally saved,
+// so that the correct Apollo gold value from index.css always wins on startup.
+document.documentElement.style.removeProperty("--primary");
+document.documentElement.style.removeProperty("--primary-foreground");
+
 // Add global CSS variables for gold and black gradients
 const style = document.createElement('style');
 style.textContent = `

@@ -5,10 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Brain, 
-  BarChart3, 
-  TrendingUp, 
+import {
+  Brain,
+  BarChart3,
+  TrendingUp,
   Target,
   Lightbulb,
   ArrowLeft,
@@ -18,6 +18,8 @@ import { Link } from "wouter";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { useAuth } from "@/hooks/use-auth";
+import JobCosting from "@/components/finance/job-costing";
+import FinancialReportsList from "@/components/finance/financial-reports-list";
 
 // AI Recommendation Engine Component
 interface RecommendationData {
@@ -262,9 +264,10 @@ export default function AdminAnalytics() {
         </div>
 
         <Tabs defaultValue="ai-recommendations" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="w-full flex flex-wrap gap-0.5">
             <TabsTrigger value="ai-recommendations">AI Recommendations</TabsTrigger>
             <TabsTrigger value="project-analytics">Project Analytics</TabsTrigger>
+            <TabsTrigger value="job-costing">Job Costing</TabsTrigger>
             <TabsTrigger value="financial-reports">Financial Reports</TabsTrigger>
             <TabsTrigger value="performance-metrics">Performance Metrics</TabsTrigger>
           </TabsList>
@@ -277,18 +280,12 @@ export default function AdminAnalytics() {
             <AnalyticsOverview />
           </TabsContent>
 
+          <TabsContent value="job-costing">
+            <JobCosting />
+          </TabsContent>
+
           <TabsContent value="financial-reports">
-            <Card>
-              <CardHeader>
-                <CardTitle>Financial Reports</CardTitle>
-                <CardDescription>
-                  Comprehensive financial analysis and reporting
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">Financial reporting interface will be implemented here.</p>
-              </CardContent>
-            </Card>
+            <FinancialReportsList />
           </TabsContent>
 
           <TabsContent value="performance-metrics">

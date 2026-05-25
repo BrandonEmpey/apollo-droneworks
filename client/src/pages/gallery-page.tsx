@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { SITE_URL, OG_IMAGE, BUSINESS_NAME } from "@/lib/structured-data";
 import { useQuery } from "@tanstack/react-query";
 import { Gallery } from "@shared/schema";
 import { GalleryItem } from "@/components/ui/gallery-item";
@@ -88,8 +89,16 @@ export default function GalleryPage() {
   return (
     <>
       <Helmet>
-        <title>Gallery | Apollo DroneWorks</title>
-        <meta name="description" content="Explore our portfolio of stunning aerial imagery, including real estate photography, construction monitoring, 3D models, and more." />
+        <title>Aerial Photography Gallery | Apollo DroneWorks</title>
+        <meta name="description" content="Browse Apollo DroneWorks' portfolio — stunning aerial photography, real estate imagery, construction monitoring, photogrammetry, and 3D mapping work across Southern Utah." />
+        <link rel="canonical" href={`${SITE_URL}/gallery`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content="Aerial Photography Gallery | Apollo DroneWorks" />
+        <meta property="og:description" content="Browse our portfolio of aerial photography, real estate imagery, construction monitoring, and 3D mapping work across Southern Utah." />
+        <meta property="og:url" content={`${SITE_URL}/gallery`} />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
 
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">

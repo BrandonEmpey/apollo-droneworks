@@ -1,35 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { 
-  Plus, 
-  Download, 
-  Printer, 
-  BarChart, 
-  FileText, 
-  Receipt, 
-  Calculator,
-  PieChart,
-  BriefcaseBusiness,
-  Users,
-  BarChart3,
-  Activity
-} from "lucide-react";
+import { Plus, Download, Printer, BarChart } from "lucide-react";
 import ExpensesList from "@/components/finance/expenses-list";
 import IncomeList from "@/components/finance/income-list";
-import ExpenseCategoriesList from "@/components/finance/expense-categories-list";
 import FinancialReportsList from "@/components/finance/financial-reports-list";
 import ExpenseForm from "@/components/finance/expense-form";
 import IncomeForm from "@/components/finance/income-form";
-import { FinanceDashboard } from "@/components/finance/finance-dashboard";
-import DocumentManagement from "@/components/finance/document-management";
 import ExportData from "@/components/finance/export-data";
-import BudgetPlanning from "@/components/finance/budget-planning";
 import TaxCalculation from "@/components/finance/tax-calculation";
-import PayrollDashboard from "@/components/finance/payroll/payroll-dashboard";
-import { PayrollAnalyticsDashboard } from "@/components/finance/analytics/payroll-analytics-dashboard";
+import AssetRegistry from "@/components/finance/asset-registry";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import DateRangePicker from "@/components/finance/date-range-picker";
@@ -259,41 +241,25 @@ const FinancePage = () => {
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="income">Income</TabsTrigger>
                 <TabsTrigger value="expenses">Expenses</TabsTrigger>
-                <TabsTrigger value="categories">Categories</TabsTrigger>
+                <TabsTrigger value="assets">Assets</TabsTrigger>
                 <TabsTrigger value="reports">Reports</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="budget">Budget</TabsTrigger>
                 <TabsTrigger value="tax">Tax</TabsTrigger>
-                <TabsTrigger value="payroll">
-                  <Users className="mr-2 h-4 w-4" />
-                  Payroll
-                </TabsTrigger>
-                <TabsTrigger value="analytics">
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  Analytics
-                </TabsTrigger>
                 <TabsTrigger value="export">Export</TabsTrigger>
               </TabsList>
-              
+
               <div className="flex justify-end gap-2">
                 {activeTab === "income" && (
-                  <Button 
-                    onClick={() => setShowIncomeForm(true)}
-                    className="flex items-center"
-                  >
+                  <Button onClick={() => setShowIncomeForm(true)} className="flex items-center">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Income
                   </Button>
                 )}
-                
-                {activeTab === "reports" && (
-                  <Button variant="outline" className="flex items-center">
+                {activeTab === "expenses" && (
+                  <Button onClick={() => setShowExpenseForm(true)} className="flex items-center">
                     <Plus className="mr-2 h-4 w-4" />
-                    New Report
+                    Add Expense
                   </Button>
                 )}
-                
-                {/* Export and Print buttons moved to top section */}
               </div>
             </div>
             
@@ -418,78 +384,18 @@ const FinancePage = () => {
               />
             </TabsContent>
             
-            <TabsContent value="categories">
-              <ExpenseCategoriesList />
+            <TabsContent value="assets">
+              <AssetRegistry />
             </TabsContent>
-            
+
             <TabsContent value="reports">
               <FinancialReportsList />
             </TabsContent>
-            
-            <TabsContent value="documents">
-              <DocumentManagement />
-            </TabsContent>
-            
-            <TabsContent value="budget">
-              <BudgetPlanning />
-            </TabsContent>
-            
+
             <TabsContent value="tax">
               <TaxCalculation />
             </TabsContent>
-            
-            <TabsContent value="payroll">
-              <PayrollDashboard />
-            </TabsContent>
-            
-            <TabsContent value="analytics">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Business Analytics</h2>
-                  <Button 
-                    variant="default" 
-                    className="flex items-center"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/analytics/sync', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json'
-                          }
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                          toast({
-                            title: "Analytics synchronized",
-                            description: "Analytics data has been synchronized successfully.",
-                            variant: "default"
-                          });
-                        } else {
-                          toast({
-                            title: "Synchronization failed",
-                            description: result.error || "Failed to synchronize analytics data.",
-                            variant: "destructive"
-                          });
-                        }
-                      } catch (error) {
-                        toast({
-                          title: "Synchronization error",
-                          description: "An error occurred while synchronizing analytics data.",
-                          variant: "destructive"
-                        });
-                      }
-                    }}
-                  >
-                    <Activity className="mr-2 h-4 w-4" />
-                    Sync Analytics Data
-                  </Button>
-                </div>
-                <PayrollAnalyticsDashboard />
-              </div>
-            </TabsContent>
-            
+
             <TabsContent value="export">
               <ExportData />
             </TabsContent>

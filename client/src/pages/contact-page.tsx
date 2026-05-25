@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { SITE_URL, OG_IMAGE, BUSINESS_NAME } from "@/lib/structured-data";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import { ContactForm } from "@/components/contact-form";
@@ -9,8 +10,16 @@ export default function ContactPage() {
   return (
     <>
       <Helmet>
-        <title>Contact Us | Apollo DroneWorks</title>
-        <meta name="description" content="Get in touch with Apollo DroneWorks for drone photography, videography and photogrammetry services. Contact us for bookings, inquiries, or custom project requests." />
+        <title>Contact Apollo DroneWorks | Southern Utah Drone Services</title>
+        <meta name="description" content="Contact Apollo DroneWorks — Southern Utah's drone photography and videography specialists. Call (435) 703-5509 or email to book aerial photography, inspections, or mapping services." />
+        <link rel="canonical" href={`${SITE_URL}/contact`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={BUSINESS_NAME} />
+        <meta property="og:title" content="Contact Apollo DroneWorks | Southern Utah" />
+        <meta property="og:description" content="Book drone photography, videography, photogrammetry, or inspection services in Southern Utah. Call (435) 703-5509." />
+        <meta property="og:url" content={`${SITE_URL}/contact`} />
+        <meta property="og:image" content={OG_IMAGE} />
+        <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
       
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#080d17] to-[#0b111f]">
@@ -54,8 +63,7 @@ export default function ContactPage() {
                       <div>
                         <h3 className="text-sm font-medium text-offwhite">Our Location</h3>
                         <p className="text-sm text-offwhite/70 mt-1">
-                          1234 Skyview Drive<br />
-                          Seattle, WA 98101<br />
+                          Southern Utah<br />
                           United States
                         </p>
                       </div>
@@ -68,7 +76,7 @@ export default function ContactPage() {
                       <div>
                         <h3 className="text-sm font-medium text-offwhite">Phone</h3>
                         <p className="text-sm text-offwhite/70 mt-1">
-                          (206) 555-0123
+                          (435) 703-5509
                         </p>
                       </div>
                     </div>
@@ -80,7 +88,7 @@ export default function ContactPage() {
                       <div>
                         <h3 className="text-sm font-medium text-offwhite">Email</h3>
                         <p className="text-sm text-offwhite/70 mt-1">
-                          info@apollodronesinc.com
+                          apollodroneworks@icloud.com
                         </p>
                       </div>
                     </div>
@@ -134,7 +142,7 @@ export default function ContactPage() {
                     <div style={{ textAlign: "center", padding: "4px" }}>
                       <strong>Apollo DroneWorks</strong><br />
                       Serving Southern Utah<br />
-                      <a href="tel:+1-435-000-0000">Call for availability</a>
+                      <a href="tel:+14357035509">(435) 703-5509</a>
                     </div>
                   </Popup>
                 </Circle>
