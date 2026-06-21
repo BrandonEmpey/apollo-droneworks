@@ -161,6 +161,13 @@ export default function ServicePage() {
     queryKey: ["/api/services"],
   });
   
+  // Fetch the admin-configurable bundle discount (public endpoint, no auth required)
+  const { data: bundleConfig } = useQuery<{ bundleDiscountPercentage: number }>({
+    queryKey: ["/api/public/bundle-discount"],
+    staleTime: 5 * 60 * 1000,
+  });
+  const BUNDLE_DISC = bundleConfig?.bundleDiscountPercentage ?? 25;
+
   // Fetch service add-ons for the current service (use service.id once loaded)
   const {
     data: serviceAddons,
@@ -848,7 +855,6 @@ export default function ServicePage() {
                   const indoorOver  = tiers.find((t: any) => t.scope === "indoor_large");
                   const outdoorStd  = tiers.find((t: any) => t.scope === "outdoor_standard");
                   const outdoorPrem = tiers.find((t: any) => t.scope === "outdoor_premium");
-                  const BUNDLE_DISC = 25;
                   const fmtRange = (t: any) => t ? `$${Math.round(t.minPrice/100).toLocaleString()}–$${Math.round(t.maxPrice/100).toLocaleString()}` : '';
                   const both = dtIndoor !== null && dtOutdoor !== null;
                   const indoorTier  = dtIndoor === 'under3k' ? indoorUnder : indoorOver;
@@ -912,7 +918,7 @@ export default function ServicePage() {
                 {/* ── Foundation to Finish: entry-point selector ───────────── */}
                 {service.name === "Foundation to Finish" && (() => {
                   const tiers: any[] = service.pricingTiers ?? [];
-                  const DISC = 25;
+                  const DISC = BUNDLE_DISC;
                   const entryPoints = [
                     { phase: 1,  label: "From the beginning", desc: "Phase 1 through completion", phases: [1, '2b', 3, 4, 5, 6] },
                     { phase: '2b', label: "Pre-drywall stage",  desc: "Phase 2B through completion", phases: ['2b', 3, 4, 5, 6] },
@@ -950,7 +956,7 @@ export default function ServicePage() {
                           );
                         })}
                       </div>
-                      <p className="text-xs text-emerald-400">25% bundle discount applied to all phases. Prices shown are Standard tier.</p>
+                      <p className="text-xs text-emerald-400">{BUNDLE_DISC}% bundle discount applied to all phases. Prices shown are Standard tier.</p>
                     </div>
                   );
                 })()}

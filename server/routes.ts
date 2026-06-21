@@ -2398,6 +2398,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: exposes only the bundle discount % so the public service page can display it
+  app.get("/api/public/bundle-discount", async (_req, res) => {
+    try {
+      const config = await storage.getBusinessConfig();
+      res.json({ bundleDiscountPercentage: config?.bundleDiscountPercentage ?? 25 });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Business Config routes
   app.get("/api/business-config", isAuthenticated, isAdmin, async (req, res) => {
     try {
