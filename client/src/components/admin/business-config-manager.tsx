@@ -20,8 +20,12 @@ interface CustomCost {
 interface BusinessConfigData {
   id?: number;
   // Admin-configurable discount settings
-  bundleDiscountPercentage: number; // 3D Digital Twin combo + Foundation to Finish
+  bundleDiscountPercentage: number; // 3D Digital Twin combo + F2F bare-ground entry
   partnerDiscountPercentage: number; // Partner account checkout discount
+  // Foundation to Finish sliding entry-point discounts
+  f2fDiscountFraming: number;
+  f2fDiscountCompletion: number;
+  f2fDiscountFinish: number;
   // Social profile URLs
   facebookUrl?: string;
   instagramUrl?: string;
@@ -78,6 +82,9 @@ const initialConfigData: BusinessConfigData = {
   // Discount settings
   bundleDiscountPercentage: 25,
   partnerDiscountPercentage: 10,
+  f2fDiscountFraming: 15,
+  f2fDiscountCompletion: 8,
+  f2fDiscountFinish: 0,
   // Social links
   facebookUrl: "",
   instagramUrl: "",
@@ -158,6 +165,9 @@ export const BusinessConfigManager = () => {
         // Discount settings
         bundleDiscountPercentage: Number((businessConfig as any).bundleDiscountPercentage) || initialConfigData.bundleDiscountPercentage,
         partnerDiscountPercentage: Number((businessConfig as any).partnerDiscountPercentage) || initialConfigData.partnerDiscountPercentage,
+        f2fDiscountFraming:    Number((businessConfig as any).f2fDiscountFraming    ?? initialConfigData.f2fDiscountFraming),
+        f2fDiscountCompletion: Number((businessConfig as any).f2fDiscountCompletion ?? initialConfigData.f2fDiscountCompletion),
+        f2fDiscountFinish:     Number((businessConfig as any).f2fDiscountFinish     ?? initialConfigData.f2fDiscountFinish),
         // Social links
         facebookUrl: (businessConfig as any).facebookUrl ?? "",
         instagramUrl: (businessConfig as any).instagramUrl ?? "",
@@ -592,10 +602,10 @@ export const BusinessConfigManager = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="bundleDiscountPercentage" className="text-sm font-medium">
-                Bundle Discount (%)
+                Bundle Discount / F2F Bare Ground (%)
               </Label>
               <p className="text-xs text-muted-foreground">
-                Applied when both Indoor + Outdoor are selected on 3D Digital Twin, and to all Foundation to Finish entry-point totals.
+                Applied when both Indoor + Outdoor are selected on 3D Digital Twin, and to the "Bare ground / not yet started" Foundation to Finish entry point (all phases).
               </p>
               <Input
                 id="bundleDiscountPercentage"
@@ -623,6 +633,60 @@ export const BusinessConfigManager = () => {
                 step={1}
                 value={configData.partnerDiscountPercentage}
                 onChange={e => setConfigData(prev => ({ ...prev, partnerDiscountPercentage: Number(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="f2fDiscountFraming" className="text-sm font-medium">
+                F2F — Foundation/Framing Entry Discount (%)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Discount for customers entering Foundation to Finish at Phase 2 (rough-in still ahead). Default 15%.
+              </p>
+              <Input
+                id="f2fDiscountFraming"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={configData.f2fDiscountFraming}
+                onChange={e => setConfigData(prev => ({ ...prev, f2fDiscountFraming: Number(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="f2fDiscountCompletion" className="text-sm font-medium">
+                F2F — Post-Rough-In Entry Discount (%)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Discount for customers entering at Phase 3 (rough-in already passed). Default 8%.
+              </p>
+              <Input
+                id="f2fDiscountCompletion"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={configData.f2fDiscountCompletion}
+                onChange={e => setConfigData(prev => ({ ...prev, f2fDiscountCompletion: Number(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="f2fDiscountFinish" className="text-sm font-medium">
+                F2F — Finished Build Entry Discount (%)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Discount for customers entering at Phase 4 (build already finished). Default 0%.
+              </p>
+              <Input
+                id="f2fDiscountFinish"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={configData.f2fDiscountFinish}
+                onChange={e => setConfigData(prev => ({ ...prev, f2fDiscountFinish: Number(e.target.value) }))}
                 className="w-full"
               />
             </div>

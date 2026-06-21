@@ -37,6 +37,7 @@ import { addPricingSettings } from "./migrations/add-pricing-settings";
 import { fixServiceAddonsFk } from "./migrations/fix-service-addons-fk";
 import { addSocialLinks } from "./migrations/add-social-links";
 import { addRoughInCredit } from "./migrations/add-rough-in-credit";
+import { addF2fDiscounts } from "./migrations/add-f2f-discounts";
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
@@ -106,6 +107,11 @@ app.use((req, res, next) => {
     await addRoughInCredit();
   } catch (err) {
     console.error("Error in add-rough-in-credit migration:", err);
+  }
+  try {
+    await addF2fDiscounts();
+  } catch (err) {
+    console.error("Error in add-f2f-discounts migration:", err);
   }
 
   // Initialize the database

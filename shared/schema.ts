@@ -314,8 +314,12 @@ export const businessConfig = pgTable("business_config", {
   autoTransportation: numeric("auto_transportation"),
   autoTaxPercentage: numeric("auto_tax_percentage"),
   // Admin-configurable discount percentages
-  bundleDiscountPercentage: numeric("bundle_discount_percentage").default("25"), // 3D Digital Twin combo + Foundation to Finish
+  bundleDiscountPercentage: numeric("bundle_discount_percentage").default("25"), // 3D Digital Twin combo + F2F bare-ground entry
   partnerDiscountPercentage: numeric("partner_discount_percentage").default("10"), // Partner account checkout discount
+  // Foundation to Finish sliding entry-point discounts
+  f2fDiscountFraming: integer("f2f_discount_framing").default(15),     // Foundation/framing entry (phase 2+)
+  f2fDiscountCompletion: integer("f2f_discount_completion").default(8), // Post-rough-in entry (phase 3+)
+  f2fDiscountFinish: integer("f2f_discount_finish").default(0),         // Finished build entry (phase 4+)
   // Single global disclaimer shown on every shareable-link interstitial.
   // Not per-service and not per-customer — applies to all shareable links.
   shareableLinkDisclaimer: text("shareable_link_disclaimer"),

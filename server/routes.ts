@@ -2462,11 +2462,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Public: exposes only the bundle discount % so the public service page can display it
+  // Public: exposes bundle/F2F discount rates for the public service page (no auth required)
   app.get("/api/public/bundle-discount", async (_req, res) => {
     try {
       const config = await storage.getBusinessConfig();
-      res.json({ bundleDiscountPercentage: config?.bundleDiscountPercentage ?? 25 });
+      res.json({
+        bundleDiscountPercentage: Number(config?.bundleDiscountPercentage ?? 25),
+        f2fDiscountFraming:    Number((config as any)?.f2fDiscountFraming    ?? 15),
+        f2fDiscountCompletion: Number((config as any)?.f2fDiscountCompletion ?? 8),
+        f2fDiscountFinish:     Number((config as any)?.f2fDiscountFinish     ?? 0),
+      });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }

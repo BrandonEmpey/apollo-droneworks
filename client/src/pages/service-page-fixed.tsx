@@ -161,12 +161,20 @@ export default function ServicePage() {
     queryKey: ["/api/services"],
   });
   
-  // Fetch the admin-configurable bundle discount (public endpoint, no auth required)
-  const { data: bundleConfig } = useQuery<{ bundleDiscountPercentage: number }>({
+  // Fetch admin-configurable discount rates (public endpoint, no auth required)
+  const { data: bundleConfig } = useQuery<{
+    bundleDiscountPercentage: number;
+    f2fDiscountFraming: number;
+    f2fDiscountCompletion: number;
+    f2fDiscountFinish: number;
+  }>({
     queryKey: ["/api/public/bundle-discount"],
     staleTime: 5 * 60 * 1000,
   });
-  const BUNDLE_DISC = bundleConfig?.bundleDiscountPercentage ?? 25;
+  const BUNDLE_DISC         = bundleConfig?.bundleDiscountPercentage ?? 25;
+  const F2F_DISC_FRAMING    = bundleConfig?.f2fDiscountFraming    ?? 15;
+  const F2F_DISC_COMPLETION = bundleConfig?.f2fDiscountCompletion ?? 8;
+  const F2F_DISC_FINISH     = bundleConfig?.f2fDiscountFinish     ?? 0;
 
   // Fetch service add-ons for the current service (use service.id once loaded)
   const {
@@ -209,8 +217,10 @@ export default function ServicePage() {
   const [ptCinematicTier, setPtCinematicTier] = useState<number>(0);
   const [ptOutdoorScope, setPtOutdoorScope] = useState<'standard' | 'premium'>('standard');
 
-  // Foundation to Finish: start-phase state
-  const [f2fStartPhase, setF2fStartPhase] = useState<number | null>(null); // 1=phase1, 2=phase2b, 3=phase3, 4=phase4
+  // Foundation to Finish: selected entry-point index (0=bare ground, 1=framing, 2=completion, 3=finish)
+  const [f2fStartPhase, setF2fStartPhase] = useState<number | null>(null);
+  // Accordion open phase (1–6); null = all collapsed
+  const [f2fOpenPhase, setF2fOpenPhase] = useState<number | null>(null);
 
   // Construction Monitoring: style + tier (default to 'progress' so price is visible on load)
   const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse'>('progress');
@@ -242,6 +252,22 @@ export default function ServicePage() {
     }
     return Math.round(indoorMid + outdoorMid);
   }, [services, ptIndoorSize, ptOutdoorType, ptCinematicTier, ptOutdoorScope]);
+
+  // Foundation to Finish total in cents for the selected entry point.
+  // Derived from pricingTiers (phase prices) + admin-configured per-entry discount.
+  const f2fSelectedTotalCents = useMemo((): number | null => {
+    if (service?.name !== "Foundation to Finish" || f2fStartPhase === null) return null;
+    const tiers: any[] = (service.pricingTiers as any[]) ?? [];
+    const phaseSets = [[1,2,3,4,5,6],[2,3,4,5,6],[3,4,5,6],[4,5,6]];
+    const phases = phaseSets[f2fStartPhase];
+    if (!phases) return null;
+    const subtotal = phases.reduce((sum, p) => {
+      const t = tiers.find((t: any) => Number(t.phase) === p);
+      return sum + (t?.price ?? 0);
+    }, 0);
+    const rates = [BUNDLE_DISC, F2F_DISC_FRAMING, F2F_DISC_COMPLETION, F2F_DISC_FINISH];
+    return Math.round(subtotal * (1 - (rates[f2fStartPhase] ?? 0) / 100));
+  }, [service, f2fStartPhase, bundleConfig]);
   
   // Refs for pricing tiers and bundle areas to handle click outside
   const pricingTiersRef = useRef<HTMLDivElement>(null);
@@ -699,7 +725,7 @@ export default function ServicePage() {
                 <h2 className="text-2xl font-bold text-gold-gradient mb-6">Recommended Bundles</h2>
                 <div className="bg-black-light rounded-lg p-6 border border-white/50">
                   <p className="text-gray-400 mb-4">Save more when you bundle services together:</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${service.name === "Foundation to Finish" ? 'lg:grid-cols-2' : 'lg:grid-cols-3'}`}>
                     {(() => {
                       // Aerial Mapping explicit bundle savings (by service name)
                       const AERIAL_MAPPING_SAVINGS: Record<string, number> = {
@@ -715,30 +741,36 @@ export default function ServicePage() {
                       };
                       const isAerialMapping = service.name === "Aerial Mapping";
 
+                      const isF2F = service.name === "Foundation to Finish";
+
                       const recommendations = services.filter(s => {
                         if (s.id === service.id) return false;
                         const currentServiceName = service.name.toLowerCase();
                         const otherServiceName = s.name.toLowerCase();
 
+                        // Foundation to Finish: fixed set including Construction Monitoring
+                        if (isF2F) {
+                          return ["3D Digital Twin", "Rough-In Digital Twin", "Real Estate Listings", "Construction Monitoring / Timelapse"].includes(s.name);
+                        }
                         // Aerial Mapping pairs with all other services
                         if (isAerialMapping) return AERIAL_MAPPING_SAVINGS[s.name] !== undefined;
                         // Any other service pairs with Aerial Mapping
                         if (s.name === "Aerial Mapping") return AERIAL_MAPPING_SAVINGS[service.name] !== undefined;
 
-                        if (currentServiceName.includes('visual') && 
+                        if (currentServiceName.includes('visual') &&
                             (otherServiceName.includes('construction') || otherServiceName.includes('monitoring'))) {
                           return true;
                         }
-                        if (currentServiceName.includes('construction') && 
+                        if (currentServiceName.includes('construction') &&
                             (otherServiceName.includes('visual') || otherServiceName.includes('media'))) {
                           return true;
                         }
-                        if (currentServiceName.includes('3d') && 
+                        if (currentServiceName.includes('3d') &&
                             (otherServiceName.includes('photography') || otherServiceName.includes('real estate'))) {
                           return true;
                         }
                         return services.indexOf(s) < 3;
-                      }).slice(0, 3);
+                      }).slice(0, isF2F ? 4 : 3);
                       
                       if (recommendations.length === 0) {
                         return (
@@ -800,7 +832,9 @@ export default function ServicePage() {
                                 />
                                 <div className="flex-1">
                                   <div className={`font-medium ${isAlreadySelected ? 'text-black' : 'text-offwhite'}`}>
-                                    + {recommendedService.name}
+                                    + {isF2F && recommendedService.name === "Construction Monitoring / Timelapse"
+                                        ? "Construction Monitoring"
+                                        : recommendedService.name}
                                   </div>
                                   <div className={`text-sm mt-1 ${isAlreadySelected ? 'text-black/70' : 'text-offwhite/60'}`}>
                                     {savingsLabel}
@@ -885,6 +919,7 @@ export default function ServicePage() {
 
           {/* Packages & Pricing Sidebar */}
           <div className="lg:col-span-1">
+            <div className="lg:sticky lg:top-4">
             <div className="bg-black-light rounded-lg p-6 border border-white/50 mb-6">
               <h3 className="text-xl font-semibold font-montserrat text-gold-gradient mb-4 text-center">
                 Packages & Pricing
@@ -960,27 +995,23 @@ export default function ServicePage() {
 
                 {/* ── Foundation to Finish: entry-point selector ───────────── */}
                 {service.name === "Foundation to Finish" && (() => {
-                  const tiers: any[] = service.pricingTiers ?? [];
-                  const DISC = BUNDLE_DISC;
+                  const tiers: any[] = (service.pricingTiers as any[]) ?? [];
                   const entryPoints = [
-                    { phase: 1,    label: "Bare ground / not yet started",                  desc: "All phases from the very beginning", phases: [1, '2b', 3, 4, 5, 6] },
-                    { phase: '2b', label: "Foundation/framing underway, rough-in still ahead", desc: "Starting at the rough-in capture",   phases: ['2b', 3, 4, 5, 6] },
-                    { phase: 3,    label: "Rough-in already passed, nothing captured yet",   desc: "Completion marketing onward",          phases: [3, 4, 5, 6] },
-                    { phase: 4,    label: "Home finished, just want the twin",               desc: "Digital Twin of the completed property", phases: [4, 5, 6] },
+                    { label: "Bare ground / not yet started",                      desc: "All 6 phases from the very beginning", phases: [1,2,3,4,5,6], disc: BUNDLE_DISC },
+                    { label: "Foundation/framing underway, rough-in still ahead",  desc: "Phases 2–6, starting at the rough-in capture", phases: [2,3,4,5,6], disc: F2F_DISC_FRAMING },
+                    { label: "Rough-in already passed, nothing captured yet",      desc: "Phases 3–6, from completion marketing onward", phases: [3,4,5,6],   disc: F2F_DISC_COMPLETION },
+                    { label: "Build finished, just want the twin",                 desc: "Phases 4–6, Digital Twin of the finished property", phases: [4,5,6], disc: F2F_DISC_FINISH },
                   ];
-                  const sumPhases = (phases: (number | string)[]) => {
-                    return phases.reduce((sum, p) => {
-                      const t = tiers.find((t: any) => String(t.phase) === String(p));
-                      return sum + (t?.price ?? 0);
-                    }, 0);
-                  };
                   return (
                     <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-3">
-                      <p className="text-sm text-offwhite/80">Already under construction? We step in wherever you are.</p>
+                      <p className="text-sm font-semibold text-offwhite/90">What Stage is Your Project In?</p>
                       <div className="space-y-2">
                         {entryPoints.map((ep, i) => {
-                          const subtotal = sumPhases(ep.phases);
-                          const discounted = Math.round(subtotal * (1 - DISC / 100));
+                          const subtotal = ep.phases.reduce((sum, p) => {
+                            const t = tiers.find((t: any) => Number(t.phase) === p);
+                            return sum + (t?.price ?? 0);
+                          }, 0);
+                          const discounted = Math.round(subtotal * (1 - ep.disc / 100));
                           const isSelected = f2fStartPhase === i;
                           return (
                             <button key={i} onClick={() => setF2fStartPhase(isSelected ? null : i)}
@@ -992,14 +1023,16 @@ export default function ServicePage() {
                                 </div>
                                 <div className="text-right shrink-0 ml-3">
                                   <p className="text-sm font-bold text-gold">${Math.round(discounted/100).toLocaleString()}</p>
-                                  <p className="text-xs text-offwhite/40 line-through">${Math.round(subtotal/100).toLocaleString()}</p>
+                                  {ep.disc > 0 && (
+                                    <p className="text-xs text-offwhite/40 line-through">${Math.round(subtotal/100).toLocaleString()}</p>
+                                  )}
                                 </div>
                               </div>
                             </button>
                           );
                         })}
                       </div>
-                      <p className="text-xs text-emerald-400">{BUNDLE_DISC}% bundle discount applied to all phases. Prices shown are Standard tier.</p>
+                      <p className="text-xs text-emerald-400">Save up to 25% — the discount scales with how early you start. Prices shown are Standard tier.</p>
                     </div>
                   );
                 })()}
@@ -1170,8 +1203,55 @@ export default function ServicePage() {
                   );
                 })()}
 
-                {/* Pricing Tiers as Cards */}
-                {service.pricingType !== "composite" && service.pricingTiers && service.pricingTiers.length > 0 ? (
+                {/* Foundation to Finish: Phase accordion (no individual booking) */}
+                {service.name === "Foundation to Finish" ? (
+                  (() => {
+                    const tiers: any[] = (service.pricingTiers as any[]) ?? [];
+                    const phases = [
+                      { n: 1, title: "Initial Aerial Mapping of the Bare Ground Site",        detail: "Georeferenced orthomosaic of the raw lot, baseline elevation and contour data, and a baseline point cloud — your project's starting reference point." },
+                      { n: 2, title: "Full Digital Twin at the Rough-In / Pre-Drywall Stage", detail: "A combined indoor + outdoor Digital Twin of the property at the rough-in / pre-drywall stage — the same capture as the standalone Rough-In Digital Twin product." },
+                      { n: 3, title: "Aerial Photography & Video at Project Completion",      detail: "A finished-property aerial photo and video package, equivalent to the Real Estate Listings service." },
+                      { n: 4, title: "Full Exterior Digital Twin of the Finished Property",   detail: "A full exterior Digital Twin of the completed property and lot." },
+                      { n: 5, title: "Full Interior Digital Twin of the Finished Property",   detail: "A full interior Digital Twin of the completed property." },
+                      { n: 6, title: "Full Project Archive including Combined Digital Twin",  detail: "Interior and exterior twins linked into one combined presentation, the complete project archive organized chronologically, and a bonus project story video assembled from the documentation footage." },
+                    ];
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-xs text-offwhite/50 mb-3">Click any phase to see what it delivers.</p>
+                        {phases.map(ph => {
+                          const t = tiers.find((t: any) => Number(t.phase) === ph.n);
+                          const price = t?.price ?? 0;
+                          const isOpen = f2fOpenPhase === ph.n;
+                          return (
+                            <div key={ph.n} className="rounded-md border border-white/15 overflow-hidden">
+                              <button
+                                className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
+                                onClick={() => setF2fOpenPhase(isOpen ? null : ph.n)}
+                              >
+                                <span className="text-sm text-offwhite/80 pr-2">
+                                  <span className="text-gold font-semibold">Phase {ph.n}</span>
+                                  {" — "}
+                                  {ph.title}
+                                </span>
+                                <span className="text-xs font-semibold text-gold shrink-0">
+                                  {price > 0 ? `$${Math.round(price/100).toLocaleString()}` : ""}
+                                </span>
+                              </button>
+                              {isOpen && (
+                                <div className="px-3 pb-3 pt-1 border-t border-white/10 bg-white/3">
+                                  <p className="text-xs text-offwhite/60 leading-relaxed">{ph.detail}</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <p className="text-center text-gray-400 text-xs pt-1">
+                          Custom packages available — <Link href="/contact" className="text-gold hover:underline">contact for quote</Link>
+                        </p>
+                      </div>
+                    );
+                  })()
+                ) : service.pricingType !== "composite" && service.pricingTiers && service.pricingTiers.length > 0 ? (
                   <div className="space-y-4">
                     {service.pricingTiers.map((tier: any, index: number) => {
                       const isPopular = tier.isPopular;
@@ -1675,7 +1755,7 @@ export default function ServicePage() {
               </div>
 
               {/* Total Price Display */}
-              {(selectedBundles.length > 0 || selectedPricingTier !== null || totalPrice !== (service?.price || 0)) && (
+              {(selectedBundles.length > 0 || selectedPricingTier !== null || totalPrice !== (service?.price || 0) || f2fSelectedTotalCents !== null) && (
                 <div className="border-t border-offwhite/10 pt-4">
                   {/* Subscription pricing breakdown */}
                   {selectedPricingTier !== null && selectedSubscription && (
@@ -1761,7 +1841,9 @@ export default function ServicePage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-medium text-gold-gradient">Total:</span>
                     <span className="text-xl font-bold text-gold-gradient">
-                      {formatPrice(totalPrice)}
+                      {f2fSelectedTotalCents !== null
+                        ? formatPrice((f2fSelectedTotalCents + bundlePricing.bundleServices.reduce((s, b) => s + b.bundlePrice, 0)) / 100)
+                        : formatPrice(totalPrice)}
                     </span>
                   </div>
                   {bundlePricing.totalDiscount > 0 && (
@@ -1791,6 +1873,25 @@ export default function ServicePage() {
               <Button
                 className="w-full bg-gold hover:bg-gold/90 text-black font-medium mt-6"
                 onClick={() => {
+                  // Foundation to Finish: require entry-point selection
+                  if (service?.name === "Foundation to Finish") {
+                    if (f2fStartPhase === null || f2fSelectedTotalCents === null) {
+                      toast({ title: "Select your entry point", description: "Choose which stage your project is at above." });
+                      return;
+                    }
+                    if (!user) {
+                      toast({ title: "Login Required", description: "Please log in to book a service." });
+                      return;
+                    }
+                    const cmExtra = bundlePricing.bundleServices.reduce((s, b) => s + b.bundlePrice, 0);
+                    const totalDollars = Math.round((f2fSelectedTotalCents + cmExtra) / 100);
+                    toast({ title: "Booking Initiated", description: `Starting booking for Foundation to Finish. Redirecting…` });
+                    setTimeout(() => {
+                      window.location.href = `/booking?service=${service.id}&totalPrice=${totalDollars}`;
+                    }, 1000);
+                    return;
+                  }
+
                   if (!user) {
                     toast({
                       title: "Login Required",
@@ -1839,6 +1940,7 @@ export default function ServicePage() {
                 Book Service
               </Button>
             </div>
+            </div>{/* /lg:sticky */}
           </div>
         </div>
       </div>
