@@ -104,6 +104,45 @@ const stripe = new Stripe(stripeKey, {
   apiVersion: "2023-10-16",
 });
 
+// Resolves the best available email/name for a booking and sends the confirmation email.
+// Non-fatal: logs errors but never throws so it can't break the payment response.
+async function fireBookingConfirmationEmail(bookingId: number) {
+  try {
+    const booking = await storage.getBooking(bookingId);
+    if (!booking) return;
+
+    let toEmail = booking.customerEmail ?? "";
+    let toName = booking.customerName ?? "Valued Client";
+
+    // Fall back to the linked user's account email if the booking fields are empty
+    if (!toEmail && booking.userId) {
+      const user = await storage.getUser(booking.userId);
+      if (user?.email) {
+        toEmail = user.email;
+        toName = toName === "Valued Client"
+          ? [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || toName
+          : toName;
+      }
+    }
+
+    if (!toEmail) return; // nowhere to send it
+
+    const service = booking.serviceId ? await storage.getService(booking.serviceId) : null;
+    await sendBookingConfirmationEmail({
+      toEmail,
+      toName,
+      bookingId: booking.id,
+      serviceName: service?.name ?? "Drone Service",
+      scheduledDate: booking.scheduledDate
+        ? new Date(booking.scheduledDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+        : "TBD",
+      totalAmount: booking.totalAmount ? parseFloat(booking.totalAmount).toFixed(2) : "0.00",
+    });
+  } catch (err) {
+    console.error("Booking confirmation email failed (non-fatal):", err);
+  }
+}
+
 // Configure multer for file uploads
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -2104,9 +2143,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.updateBooking(parseInt(bookingId), {
             paymentStatus: 'free'
           });
-          return res.json({ 
-            free: true, 
-            message: "Free service confirmed. No payment required." 
+          fireBookingConfirmationEmail(parseInt(bookingId));
+          return res.json({
+            free: true,
+            message: "Free service confirmed. No payment required."
           });
         }
       }
@@ -2229,11 +2269,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        fireBookingConfirmationEmail(bookingId_num);
+
         // Return a special response that will be handled by the frontend
-        return res.json({ 
+        return res.json({
           testMode: true,
           free: true, // Reuse the free flow for simplicity
-          message: "TEST MODE: Booking confirmed without payment" 
+          message: "TEST MODE: Booking confirmed without payment"
         });
       }
       
@@ -2298,26 +2340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             paymentStatus: 'paid'
           });
 
-          try {
-            const booking = await storage.getBooking(parseInt(bookingId));
-            if (booking && booking.customerEmail) {
-              const service = booking.serviceId ? await storage.getService(booking.serviceId) : null;
-              await sendBookingConfirmationEmail({
-                toEmail: booking.customerEmail,
-                toName: booking.customerName || "Valued Client",
-                bookingId: booking.id,
-                serviceName: service?.name || "Drone Service",
-                scheduledDate: booking.scheduledDate
-                  ? new Date(booking.scheduledDate).toLocaleDateString()
-                  : "TBD",
-                totalAmount: booking.totalAmount
-                  ? parseFloat(booking.totalAmount).toFixed(2)
-                  : "0.00",
-              });
-            }
-          } catch (emailErr) {
-            console.error("Booking confirmation email failed (non-fatal):", emailErr);
-          }
+          fireBookingConfirmationEmail(parseInt(bookingId));
         }
 
         console.log('Payment succeeded for booking:', bookingId);
