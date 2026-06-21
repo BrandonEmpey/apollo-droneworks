@@ -879,6 +879,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Returns unredeemed Rough-In Digital Twin credits for the logged-in user.
+  // A credit is "outstanding" when: service_id = 20 (Rough-In), status = 'completed',
+  // and no other booking references this booking's id as credit_source_booking_id.
+  app.get("/api/credits/rough-in", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const result = await db.execute(`
+        SELECT b.id, b.total_amount, b.created_at, b.project_location
+        FROM bookings b
+        WHERE b.user_id = $1
+          AND b.service_id = 20
+          AND b.status = 'completed'
+          AND NOT EXISTS (
+            SELECT 1 FROM bookings rb
+            WHERE rb.credit_source_booking_id = b.id
+          )
+        ORDER BY b.created_at DESC
+        LIMIT 1
+      `, [userId]);
+      const credit = (result.rows as any[])[0] ?? null;
+      res.json({ credit });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/bookings", isAuthenticated, async (req, res) => {
     try {
       // If admin, return all bookings; otherwise, return user's bookings

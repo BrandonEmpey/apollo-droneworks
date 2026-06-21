@@ -532,6 +532,8 @@ const baseBookingSchema = createInsertSchema(bookings).pick({
   projectName: true,
   selectedServices: true,
   date: true,
+  creditAmount: true,
+  creditSourceBookingId: true,
 });
 
 // Customize to accept string or Date for the date field

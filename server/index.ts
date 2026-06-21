@@ -36,6 +36,7 @@ import { backfillBookingIncome, seedDemoExpenses } from "./booking-finance-sync"
 import { addPricingSettings } from "./migrations/add-pricing-settings";
 import { fixServiceAddonsFk } from "./migrations/fix-service-addons-fk";
 import { addSocialLinks } from "./migrations/add-social-links";
+import { addRoughInCredit } from "./migrations/add-rough-in-credit";
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
@@ -100,6 +101,11 @@ app.use((req, res, next) => {
     await addSocialLinks();
   } catch (err) {
     console.error("Error in add-social-links migration:", err);
+  }
+  try {
+    await addRoughInCredit();
+  } catch (err) {
+    console.error("Error in add-rough-in-credit migration:", err);
   }
 
   // Initialize the database

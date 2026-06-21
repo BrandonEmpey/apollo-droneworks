@@ -164,8 +164,25 @@ export default function BookingPage() {
     queryKey: ["/api/business-config"],
   });
 
+  // Fetch any outstanding Rough-In Digital Twin credit for this user
+  const { data: roughInCreditData } = useQuery<{ credit: { id: number; total_amount: string; project_location: string | null } | null }>({
+    queryKey: ["/api/credits/rough-in"],
+    enabled: !!user,
+  });
+
   const partnerDiscountPct: number = user?.isPartnerAccount
     ? Number((businessConfig as any)?.partnerDiscountPercentage ?? 10)
+    : 0;
+
+  // Rough-In credit: applies only when booking 3D Digital Twin (19) or Foundation to Finish (21)
+  const selectedPrimaryId = parseInt(
+    primaryServiceId || selectedServiceId || "0"
+  );
+  const CREDIT_ELIGIBLE_IDS = [19, 21];
+  const roughInCredit = roughInCreditData?.credit ?? null;
+  const creditApplies = !!roughInCredit && CREDIT_ELIGIBLE_IDS.includes(selectedPrimaryId);
+  const creditCents = creditApplies
+    ? Math.round(parseFloat(roughInCredit!.total_amount) * 100)
     : 0;
 
   // Get selected service details
@@ -512,21 +529,30 @@ export default function BookingPage() {
       console.log("Edit booking payload being sent to API:", editPayload);
       updateBookingMutation.mutate(editPayload);
     } else {
+      // Apply Rough-In credit to the total if eligible
+      const creditDollars = creditCents / 100;
+      const finalTotalDollars = Math.max(0, totalPriceDollars - creditDollars);
+
       // Create booking object with all fields required for new bookings
-      const bookingData = {
+      const bookingData: Record<string, any> = {
         userId: user.id,
         serviceId: parseInt(primaryServiceId),
         date: bookingDateTime, // Send directly as Date object
         status: "pending",
         projectLocation: values.address || null, // Ensure null for empty string
         notes: values.notes || null, // Ensure null for empty string
-        totalAmount: totalPriceDollars.toString(), // Schema field is totalAmount (numeric = string), stored in dollars
-        paymentStatus: totalPriceDollars > 0 ? "pending" : "free",
+        totalAmount: finalTotalDollars.toString(), // Schema field is totalAmount (numeric = string), stored in dollars
+        paymentStatus: finalTotalDollars > 0 ? "pending" : "free",
         paymentIntentId: null, // Explicitly include this field with null value
         projectName: values.projectName, // Include project name from form
         // Convert all selected service IDs from strings to numbers
-        selectedServices: values.selectedServices.map(id => parseInt(id))
+        selectedServices: values.selectedServices.map(id => parseInt(id)),
       };
+      // Attach credit fields so the booking record tracks the redemption
+      if (creditApplies && roughInCredit && creditCents > 0) {
+        bookingData.creditAmount = creditCents;
+        bookingData.creditSourceBookingId = roughInCredit.id;
+      }
       // Create new booking - on success will redirect to checkout page
       console.log("Final booking data being sent to API:", bookingData);
       createBookingMutation.mutate(bookingData);
@@ -684,6 +710,16 @@ export default function BookingPage() {
             {bookingStep === 1 && (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  {roughInCredit && !creditApplies && (
+                    <div className="flex items-start gap-3 p-4 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-sm text-emerald-300">
+                      <span className="text-emerald-400 font-bold mt-0.5">✓</span>
+                      <p>
+                        You have a <strong>${parseFloat(roughInCredit.total_amount).toFixed(0)} Rough-In Digital Twin credit</strong> available.
+                        It will be applied automatically when you book the{" "}
+                        <strong>3D Digital Twin</strong> or <strong>Foundation to Finish</strong> service.
+                      </p>
+                    </div>
+                  )}
                   <Card className="bg-[#132642] border-gold-dark/30">
                     <CardHeader className="text-center">
                       <CardTitle className="text-xl text-offwhite">Services</CardTitle>
@@ -1061,13 +1097,19 @@ export default function BookingPage() {
                               </>
                             );
                           })()}
+                          {creditApplies && creditCents > 0 && (
+                            <div className="flex items-center justify-between text-sm text-emerald-400">
+                              <span>Rough-In Digital Twin credit applied</span>
+                              <span>−${(creditCents / 100).toFixed(0)}</span>
+                            </div>
+                          )}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <DollarSign className="h-5 w-5 text-gold" />
                               <span className="text-offwhite font-medium">Total</span>
                             </div>
                             <span className="text-xl font-semibold text-gold">
-                              ${(calculateTotalPrice(form.watch("selectedServices")) / 100).toFixed(0)}
+                              ${(Math.max(0, calculateTotalPrice(form.watch("selectedServices")) - creditCents) / 100).toFixed(0)}
                             </span>
                           </div>
                         </div>
