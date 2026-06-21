@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDeliverable } from "@/components/enhanced-service-card";
+import { DigitalTwinTerm } from "@/components/digital-twin-term";
 
 
 // Service Media Carousel Component
@@ -190,6 +191,17 @@ export default function ServicePage() {
   const [selectedAddOns, setSelectedAddOns] = useState<number[]>([]);
   const [selectedSubscription, setSelectedSubscription] = useState<'weekly' | 'biWeekly' | 'monthly' | null>(null);
   const [flightQuantity, setFlightQuantity] = useState<number>(1);
+
+  // 3D Digital Twin: Indoor/Outdoor checkbox state
+  const [dtIndoor, setDtIndoor] = useState<'under3k' | 'over3k' | null>(null);
+  const [dtOutdoor, setDtOutdoor] = useState<'standard' | 'premium' | null>(null);
+
+  // Foundation to Finish: start-phase state
+  const [f2fStartPhase, setF2fStartPhase] = useState<number | null>(null); // 1=phase1, 2=phase2b, 3=phase3, 4=phase4
+
+  // Construction Monitoring: style + tier
+  const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse' | null>(null);
+  const [cmTier, setCmTier] = useState<'standard' | 'premium'>('standard');
   
   // Refs for pricing tiers and bundle areas to handle click outside
   const pricingTiersRef = useRef<HTMLDivElement>(null);
@@ -828,8 +840,174 @@ export default function ServicePage() {
                 Packages & Pricing
               </h3>
               <div className="space-y-4 mb-6" ref={pricingTiersRef}>
+
+                {/* ── 3D Digital Twin: Indoor/Outdoor selector ───────────── */}
+                {service.name === "3D Digital Twin" && (() => {
+                  const tiers: any[] = service.pricingTiers ?? [];
+                  const indoorUnder = tiers.find((t: any) => t.scope === "indoor");
+                  const indoorOver  = tiers.find((t: any) => t.scope === "indoor_large");
+                  const outdoorStd  = tiers.find((t: any) => t.scope === "outdoor_standard");
+                  const outdoorPrem = tiers.find((t: any) => t.scope === "outdoor_premium");
+                  const BUNDLE_DISC = 25;
+                  const fmtRange = (t: any) => t ? `$${Math.round(t.minPrice/100).toLocaleString()}–$${Math.round(t.maxPrice/100).toLocaleString()}` : '';
+                  const both = dtIndoor !== null && dtOutdoor !== null;
+                  const indoorTier  = dtIndoor === 'under3k' ? indoorUnder : indoorOver;
+                  const outdoorTier = dtOutdoor === 'standard' ? outdoorStd  : outdoorPrem;
+                  const indoorMid  = indoorTier  ? (indoorTier.minPrice  + indoorTier.maxPrice)  / 2 : 0;
+                  const outdoorMid = outdoorTier ? (outdoorTier.minPrice + outdoorTier.maxPrice) / 2 : 0;
+                  const totalMid   = both ? Math.round((indoorMid + outdoorMid) * (1 - BUNDLE_DISC / 100)) : null;
+                  return (
+                    <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-4">
+                      <p className="text-sm text-offwhite/80">Select what you'd like captured — pick Indoor, Outdoor, or both.</p>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs font-semibold text-gold mb-2">Indoor — navigable 3D walkthrough</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[{ val: 'under3k' as const, label: 'Under 3,000 sq ft', tier: indoorUnder },
+                              { val: 'over3k'  as const, label: '3,000–6,000 sq ft',  tier: indoorOver }].map(opt => (
+                              <button key={opt.val}
+                                onClick={() => setDtIndoor(dtIndoor === opt.val ? null : opt.val)}
+                                className={`text-left p-3 rounded-md border transition-all text-xs ${dtIndoor === opt.val ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                                <span className="block font-medium">{opt.label}</span>
+                                <span className="text-gold/80">{fmtRange(opt.tier)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold text-gold mb-2">Outdoor — exterior Digital Twin of structure &amp; lot</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[{ val: 'standard' as const, label: 'Standard (single lot)', tier: outdoorStd },
+                              { val: 'premium'  as const, label: 'Premium (larger/multi)', tier: outdoorPrem }].map(opt => (
+                              <button key={opt.val}
+                                onClick={() => setDtOutdoor(dtOutdoor === opt.val ? null : opt.val)}
+                                className={`text-left p-3 rounded-md border transition-all text-xs ${dtOutdoor === opt.val ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                                <span className="block font-medium">{opt.label}</span>
+                                <span className="text-gold/80">{fmtRange(opt.tier)}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      {(dtIndoor || dtOutdoor) && (
+                        <div className="pt-2 border-t border-gold/20 text-sm">
+                          {both && (
+                            <p className="text-emerald-400 text-xs mb-1">{BUNDLE_DISC}% bundle discount applied — both Indoor + Outdoor selected</p>
+                          )}
+                          <p className="text-gold font-semibold">
+                            {totalMid
+                              ? `Estimated total: ~$${Math.round(totalMid/100).toLocaleString()}`
+                              : dtIndoor
+                                ? `Indoor: ${fmtRange(indoorTier)}`
+                                : `Outdoor: ${fmtRange(outdoorTier)}`
+                            }
+                          </p>
+                          <p className="text-offwhite/50 text-xs mt-0.5">Price shown is midpoint estimate — final quote provided after booking</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ── Foundation to Finish: entry-point selector ───────────── */}
+                {service.name === "Foundation to Finish" && (() => {
+                  const tiers: any[] = service.pricingTiers ?? [];
+                  const DISC = 25;
+                  const entryPoints = [
+                    { phase: 1,  label: "From the beginning", desc: "Phase 1 through completion", phases: [1, '2b', 3, 4, 5, 6] },
+                    { phase: '2b', label: "Pre-drywall stage",  desc: "Phase 2B through completion", phases: ['2b', 3, 4, 5, 6] },
+                    { phase: 3,  label: "Near completion",    desc: "Phase 3 through completion",  phases: [3, 4, 5, 6] },
+                    { phase: 4,  label: "Already done",       desc: "Digital Twin of finished property", phases: [4, 5, 6] },
+                  ];
+                  const sumPhases = (phases: (number | string)[]) => {
+                    return phases.reduce((sum, p) => {
+                      const t = tiers.find((t: any) => String(t.phase) === String(p));
+                      return sum + (t?.price ?? 0);
+                    }, 0);
+                  };
+                  return (
+                    <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-3">
+                      <p className="text-sm text-offwhite/80">Already under construction? We step in wherever you are.</p>
+                      <div className="space-y-2">
+                        {entryPoints.map((ep, i) => {
+                          const subtotal = sumPhases(ep.phases);
+                          const discounted = Math.round(subtotal * (1 - DISC / 100));
+                          const isSelected = f2fStartPhase === i;
+                          return (
+                            <button key={i} onClick={() => setF2fStartPhase(isSelected ? null : i)}
+                              className={`w-full text-left p-3 rounded-md border transition-all ${isSelected ? 'border-gold bg-gold/10' : 'border-white/20 hover:border-gold/40'}`}>
+                              <div className="flex justify-between items-center">
+                                <div>
+                                  <span className={`text-sm font-semibold ${isSelected ? 'text-gold' : 'text-offwhite'}`}>{ep.label}</span>
+                                  <p className="text-xs text-offwhite/60 mt-0.5">{ep.desc}</p>
+                                </div>
+                                <div className="text-right shrink-0 ml-3">
+                                  <p className="text-sm font-bold text-gold">${Math.round(discounted/100).toLocaleString()}</p>
+                                  <p className="text-xs text-offwhite/40 line-through">${Math.round(subtotal/100).toLocaleString()}</p>
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-xs text-emerald-400">25% bundle discount applied to all phases. Prices shown are Standard tier.</p>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Construction Monitoring / Timelapse: style + tier ─────── */}
+                {service.name === "Construction Monitoring / Timelapse" && (() => {
+                  const tiers: any[] = service.pricingTiers ?? [];
+                  const selected = tiers.find((t: any) => t.style === (cmStyle ?? 'progress') && t.tier === cmTier);
+                  return (
+                    <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-3">
+                      <div>
+                        <p className="text-xs font-semibold text-gold mb-2">Choose your style</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {[{ val: 'progress' as const, label: 'Progress Documentation', desc: 'Timestamped site record per visit' },
+                            { val: 'timelapse' as const, label: 'Cinematic Timelapse', desc: 'Polished marketing video (min 8 visits)' }].map(opt => (
+                            <button key={opt.val} onClick={() => setCmStyle(opt.val)}
+                              className={`text-left p-3 rounded-md border transition-all text-xs ${cmStyle === opt.val ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                              <span className="block font-medium">{opt.label}</span>
+                              <span className="text-offwhite/50">{opt.desc}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-gold mb-2">Choose your tier</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(['standard', 'premium'] as const).map(t => (
+                            <button key={t} onClick={() => setCmTier(t)}
+                              className={`p-3 rounded-md border capitalize text-xs transition-all ${cmTier === t ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      {cmStyle && selected && (
+                        <div className="pt-2 border-t border-gold/20">
+                          <p className="text-gold font-semibold text-sm">${Math.round(selected.price/100).toLocaleString()} per visit</p>
+                          {selected.minRecommendedVisits && (
+                            <p className="text-xs text-offwhite/50 mt-0.5">Min {selected.minRecommendedVisits} visits recommended for best result</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* ── Property Tours: composite price display ───────────────── */}
+                {service.pricingType === "composite" && (
+                  <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 text-sm text-offwhite/80">
+                    <p className="font-semibold text-gold mb-1">How pricing works</p>
+                    <p>Property Tours combines an Indoor <DigitalTwinTerm /> (indoor walkthrough) with your choice of Aerial Cinematic Video or an Outdoor <DigitalTwinTerm />. The total is the sum of the component services you choose — no separate Property Tours price.</p>
+                    <p className="mt-2 text-offwhite/60 text-xs">Book the component services individually: start with Real Estate Listings for the aerial video, then add a 3D Digital Twin for the indoor or outdoor twin.</p>
+                  </div>
+                )}
+
                 {/* Pricing Tiers as Cards */}
-                {service.pricingTiers && service.pricingTiers.length > 0 ? (
+                {service.pricingType !== "composite" && service.pricingTiers && service.pricingTiers.length > 0 ? (
                   <div className="space-y-4">
                     {service.pricingTiers.map((tier: any, index: number) => {
                       const isPopular = tier.isPopular;

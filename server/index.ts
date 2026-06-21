@@ -33,6 +33,8 @@ import { fixIndustryTileCategories } from "./migrations/fix-industry-tile-catego
 import { seedIndustryTiles } from "./migrations/seed-industry-tiles";
 import { startBlogCron } from "./cron/blog-cron";
 import { backfillBookingIncome, seedDemoExpenses } from "./booking-finance-sync";
+import { addPricingSettings } from "./migrations/add-pricing-settings";
+import { fixServiceAddonsFk } from "./migrations/fix-service-addons-fk";
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
@@ -82,6 +84,18 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Fix schema issues before any ORM queries run
+  try {
+    await addPricingSettings();
+  } catch (err) {
+    console.error("Error in add-pricing-settings pre-init migration:", err);
+  }
+  try {
+    await fixServiceAddonsFk();
+  } catch (err) {
+    console.error("Error in fix-service-addons-fk migration:", err);
+  }
+
   // Initialize the database
   await initializeDatabase();
   

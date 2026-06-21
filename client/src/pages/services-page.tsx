@@ -3,6 +3,7 @@ import { SITE_URL, OG_IMAGE, BUSINESS_NAME, breadcrumbSchema } from "@/lib/struc
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import ServicesSection from "@/components/services-section";
+import { TrustBar } from "@/components/trust-bar";
 
 export default function ServicesPage() {
   return (
@@ -41,6 +42,7 @@ export default function ServicesPage() {
               </p>
             </div>
           </section>
+          <TrustBar />
           <ServicesSection />
         </main>
         <Footer />

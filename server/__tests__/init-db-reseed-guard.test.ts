@@ -51,6 +51,18 @@ vi.mock("../migrations/add-software-and-custom-costs", () => ({
 vi.mock("../migrations/create-payroll-tables", () => ({
   createPayrollTables: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("../migrations/rebuild-service-catalog", () => ({
+  rebuildServiceCatalog: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../migrations/add-pricing-settings", () => ({
+  addPricingSettings: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../migrations/populate-service-addon-links", () => ({
+  populateServiceAddonLinks: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../migrations/populate-rush-order-pricing", () => ({
+  populateRushOrderPricing: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Import after all mocks are registered.
 import { db } from "../db";
@@ -123,7 +135,7 @@ function configureUpdate() {
 }
 
 // ---------------------------------------------------------------------------
-// Build a full set of 10 service rows matching the canonical names.
+// Build a full set of 11 service rows matching the canonical names.
 // ---------------------------------------------------------------------------
 function allCanonicalRows(): { id: number; name: string }[] {
   return CANONICAL_SERVICE_NAMES.map((name, i) => ({ id: i + 1, name }));
@@ -172,8 +184,8 @@ describe("initializeDatabase – re-seed guard", () => {
   });
 
   // ── Canonical name list ──────────────────────────────────────────────────
-  it("exports exactly 10 canonical service names", () => {
-    expect(CANONICAL_SERVICE_NAMES).toHaveLength(10);
+  it("exports exactly 11 canonical service names", () => {
+    expect(CANONICAL_SERVICE_NAMES).toHaveLength(11);
   });
 
   it("canonical list contains all expected service names", () => {
@@ -183,15 +195,21 @@ describe("initializeDatabase – re-seed guard", () => {
     expect(names).toContain("Promotional Content");
     expect(names).toContain("Roof Inspections");
     expect(names).toContain("Property & Site Evaluation");
-    expect(names).toContain("Infrastructure & Structure Inspections");
-    expect(names).toContain("Construction Planning & Monitoring");
+    expect(names).toContain("Structural Inspections");
     expect(names).toContain("Aerial Mapping");
-    expect(names).toContain("3D Modeling");
-    expect(names).toContain("Timelapse Creation");
+    expect(names).toContain("Construction Monitoring / Timelapse");
+    expect(names).toContain("3D Digital Twin");
+    expect(names).toContain("Rough-In Digital Twin");
+    expect(names).toContain("Foundation to Finish");
+    // Confirm retired names are gone
+    expect(names).not.toContain("Infrastructure & Structure Inspections");
+    expect(names).not.toContain("Construction Planning & Monitoring");
+    expect(names).not.toContain("3D Modeling");
+    expect(names).not.toContain("Timelapse Creation");
   });
 
   // ── Guard: all canonical names present → skip seeding ───────────────────
-  it("does NOT call db.execute when all 10 canonical services are present", async () => {
+  it("does NOT call db.execute when all 11 canonical services are present", async () => {
     configureSelects({ servicesRows: allCanonicalRows() });
 
     await initializeDatabase();
@@ -199,7 +217,7 @@ describe("initializeDatabase – re-seed guard", () => {
     expect(db.execute).not.toHaveBeenCalled();
   });
 
-  it("does NOT call db.insert for services when all 10 canonical services are present", async () => {
+  it("does NOT call db.insert for services when all 11 canonical services are present", async () => {
     configureSelects({ servicesRows: allCanonicalRows() });
 
     await initializeDatabase();
@@ -214,7 +232,7 @@ describe("initializeDatabase – re-seed guard", () => {
   });
 
   // ── Guard: partial catalog (9 of 10 canonical names) → reseed ───────────
-  it("issues DELETE statements for service_addons, addons, and services when 9 of 10 present", async () => {
+  it("issues DELETE statements for service_addons, addons, and services when 10 of 11 present", async () => {
     const partialRows = allCanonicalRows().slice(0, 9);
     configureSelects({ servicesRows: partialRows });
 
@@ -228,7 +246,7 @@ describe("initializeDatabase – re-seed guard", () => {
     expect(sqlTexts.some((s) => s.includes("delete") && s.includes("services"))).toBe(true);
   });
 
-  it("calls db.insert for services when only 9 of 10 canonical services are present", async () => {
+  it("calls db.insert for services when only 10 of 11 canonical services are present", async () => {
     const partialRows = allCanonicalRows().slice(0, 9);
     configureSelects({ servicesRows: partialRows });
 
@@ -251,7 +269,7 @@ describe("initializeDatabase – re-seed guard", () => {
     expect(sqlTexts.some((s) => s.includes("delete") && s.includes("services"))).toBe(true);
   });
 
-  it("seeds all 10 canonical services when services table is empty", async () => {
+  it("seeds all 11 canonical services when services table is empty", async () => {
     const seededNames: string[] = [];
 
     const returningMock = vi.fn().mockImplementation(async () => {
@@ -272,7 +290,7 @@ describe("initializeDatabase – re-seed guard", () => {
     const canonicalSeeded = seededNames.filter((n) =>
       (CANONICAL_SERVICE_NAMES as readonly string[]).includes(n),
     );
-    expect(canonicalSeeded).toHaveLength(10);
+    expect(canonicalSeeded).toHaveLength(11);
     for (const name of CANONICAL_SERVICE_NAMES) {
       expect(canonicalSeeded).toContain(name);
     }

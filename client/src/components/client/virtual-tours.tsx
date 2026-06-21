@@ -246,7 +246,7 @@ export default function VirtualTours() {
                     size="sm"
                   >
                     <Eye className="h-4 w-4 mr-2" />
-                    {tour.tourType === "inspection" ? "View Survey" : "View Tour"}
+                    {tour.tourType === "inspection" ? "View Mapping" : "View Tour"}
                   </Button>
                   
 

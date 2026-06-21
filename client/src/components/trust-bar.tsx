@@ -1,4 +1,4 @@
-import { ShieldCheck, Award, FileCheck, Plane } from "lucide-react";
+import { ShieldCheck, Award, FileCheck, Plane, MapPin } from "lucide-react";
 
 const badges = [
   {
@@ -12,6 +12,10 @@ const badges = [
   {
     icon: <Plane className="h-5 w-5 text-gold" />,
     label: "LAANC Authorized",
+  },
+  {
+    icon: <MapPin className="h-5 w-5 text-gold" />,
+    label: "Local Travel Included",
   },
   {
     icon: <Award className="h-5 w-5 text-gold" />,

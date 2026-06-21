@@ -1,13 +1,15 @@
 import { Link } from "wouter";
 import { Mail, Phone, MapPin, Clock, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 import logoImage from '@assets/Color_logo_-_no_background_1767370534671.png';
+import { TrustBar } from "@/components/trust-bar";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#080d17] pt-16 pb-6">
-      <div className="container mx-auto px-4">
+    <footer className="bg-[#080d17] pb-6">
+      <TrustBar />
+      <div className="container mx-auto px-4 pt-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Company Info */}
           <div>

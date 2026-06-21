@@ -159,6 +159,14 @@ export default function BookingPage() {
     enabled: !!editId,
   });
 
+  const { data: businessConfig } = useQuery<any>({
+    queryKey: ["/api/business-config"],
+  });
+
+  const partnerDiscountPct: number = user?.isPartnerAccount
+    ? Number((businessConfig as any)?.partnerDiscountPercentage ?? 10)
+    : 0;
+
   // Get selected service details
   const selectedService = services?.find(
     (service) => service.id === parseInt(selectedServiceId || "0")
@@ -406,20 +414,26 @@ export default function BookingPage() {
     // Check if this is a bundle booking with discount
     const bundleDiscount = bundleDiscountParam ? parseInt(bundleDiscountParam) : 0;
     const isPrimaryService = primaryServiceId ? primaryServiceId : null;
-    
-    return selectedServiceIds.reduce((total, serviceId) => {
+
+    const subtotal = selectedServiceIds.reduce((total, serviceId) => {
       const service = services?.find(s => s.id.toString() === serviceId);
       if (!service) return total;
-      
+
       let servicePrice = getEffectiveServicePrice(service, serviceId);
-      
+
       // Apply bundle discount to add-on services (not the primary service)
       if (bundleDiscount > 0 && isPrimaryService && serviceId !== isPrimaryService) {
         servicePrice = servicePrice * (1 - bundleDiscount / 100);
       }
-      
+
       return total + servicePrice;
     }, 0);
+
+    // Apply partner account discount after bundle discount
+    if (partnerDiscountPct > 0) {
+      return Math.round(subtotal * (1 - partnerDiscountPct / 100));
+    }
+    return subtotal;
   };
   
   // Get primary service (the non-free service with highest price)
@@ -1030,14 +1044,31 @@ export default function BookingPage() {
                         )}
 
                         {/* Total price calculation */}
-                        <div className="flex items-center justify-between p-4 mt-2 bg-[#080d17]/60 rounded-lg border border-gold/30">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-5 w-5 text-gold" />
-                            <span className="text-offwhite font-medium">Total</span>
+                        <div className="flex flex-col gap-1 p-4 mt-2 bg-[#080d17]/60 rounded-lg border border-gold/30">
+                          {partnerDiscountPct > 0 && (() => {
+                            const base = calculateTotalPrice(form.watch("selectedServices")) / (1 - partnerDiscountPct / 100);
+                            return (
+                              <>
+                                <div className="flex items-center justify-between text-sm text-offwhite/60">
+                                  <span>Subtotal</span>
+                                  <span>${(base / 100).toFixed(0)}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm text-emerald-400">
+                                  <span>Partner discount ({partnerDiscountPct}%)</span>
+                                  <span>−${((base - calculateTotalPrice(form.watch("selectedServices"))) / 100).toFixed(0)}</span>
+                                </div>
+                              </>
+                            );
+                          })()}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-5 w-5 text-gold" />
+                              <span className="text-offwhite font-medium">Total</span>
+                            </div>
+                            <span className="text-xl font-semibold text-gold">
+                              ${(calculateTotalPrice(form.watch("selectedServices")) / 100).toFixed(0)}
+                            </span>
                           </div>
-                          <span className="text-xl font-semibold text-gold">
-                            ${(calculateTotalPrice(form.watch("selectedServices")) / 100).toFixed(0)}
-                          </span>
                         </div>
                       </div>
                     </CardContent>

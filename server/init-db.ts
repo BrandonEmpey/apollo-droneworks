@@ -14,7 +14,7 @@ async function hashPassword(password: string) {
   return `${buf.toString("hex")}.${salt}`;
 }
 
-// The 10 canonical service names that constitute a complete catalog.
+// The 11 canonical service names that constitute a complete catalog.
 // Exported so automated tests can verify the guard without duplicating this list.
 // If a service is ever renamed here, update the list AND the matching row in the DB
 // (or run scripts/replace-services.ts to reset). A mismatch causes reseeding on the
@@ -25,11 +25,12 @@ export const CANONICAL_SERVICE_NAMES: readonly string[] = [
   "Promotional Content",
   "Roof Inspections",
   "Property & Site Evaluation",
-  "Infrastructure & Structure Inspections",
-  "Construction Planning & Monitoring",
+  "Structural Inspections",
   "Aerial Mapping",
-  "3D Modeling",
-  "Timelapse Creation",
+  "Construction Monitoring / Timelapse",
+  "3D Digital Twin",
+  "Rough-In Digital Twin",
+  "Foundation to Finish",
 ] as const;
 
 // Initialize the database with default data
@@ -58,68 +59,46 @@ export async function initializeDatabase() {
 
     if (allCanonicalPresent) {
       console.log(`All ${CANONICAL_SERVICE_NAMES.length} canonical services present — skipping initialization.`);
+      // Note: rebuild-service-catalog migration runs separately below regardless of this guard.
     } else {
       console.log('One or more canonical services missing — seeding catalog...');
+      // Null out FK references in bookings before deleting services to avoid FK constraint errors
+      await db.execute(sql`UPDATE bookings SET service_id = NULL WHERE service_id IS NOT NULL`);
       await db.execute(sql`DELETE FROM service_addons`);
       await db.execute(sql`DELETE FROM addons`);
       await db.execute(sql`DELETE FROM services`);
 
       // ── Add-ons ─────────────────────────────────────────────────────────────
-      // Shared add-ons (indices 0-3) are linked to multiple services.
+      // Rebuilt from scratch. Index references used when linking to services.
+      //  0  Extra 5 Photos                  → Real Estate Listings
+      //  1  Social Media Crop Pack           → Real Estate Listings
+      //  2  Extra Edited Video Cut           → Promotional Content
+      //  3  Extended Site Coverage           → Promotional Content
+      //  4  Additional Structure (same prop) → Roof Inspections
+      //  5  Follow-Up Visit (shared)         → Roof / P&SE / Structural Inspections
+      //  6  Thermal Imaging (disabled,shared)→ Roof / Structural Inspections
+      //  7  Extended Property Coverage       → Property & Site Evaluation
+      //  8  Additional Structure (same site) → Structural Inspections
+      //  9  Custom CAD/GIS Export Formatting → Aerial Mapping
+      // 10  Additional One-Off Monitoring Flight → Construction Monitoring/Timelapse
+      // 11  Rendered Fly-Through Video Export → 3D Digital Twin
+      // 12  Custom-Branded Embeddable Viewer  → 3D Digital Twin
+      // 13  Extended/Upgraded Project Story Video (disabled) → Foundation to Finish
       const canonicalAddons = [
-        // 0-3: shared
-        { name: "Twilight / Golden Hour",       price: 4900,  description: "Golden hour or twilight shoot for dramatic lighting",              tooltipDescription: "Adds a separate golden-hour or twilight flight" },
-        { name: "Same-day delivery",            price: 3500,  description: "Expedited same-day delivery of edited files",                      tooltipDescription: "Receive your edited files the same day as your shoot" },
-        { name: "Social Media Content",         price: 7900,  description: "Vertical / square crops and reels optimized for social platforms", tooltipDescription: "Vertical and square formats ready to post" },
-        { name: "Thermal imaging",              price: 9900,  description: "Add thermal / infrared imaging to your inspection",                tooltipDescription: "Detects heat anomalies invisible to a standard camera" },
-        // 4-6: Real Estate Listings
-        { name: "Extra 5 photos",              price: 3000,  description: "Add 5 additional edited photos to your package",                  tooltipDescription: "+5 professionally edited aerial photos" },
-        { name: "Extend video",                price: 4000,  description: "Extend your video to a longer duration",                          tooltipDescription: "Longer finished video cut" },
-        { name: "Lot-line overlays",           price: 2500,  description: "Add property lot-line overlays to aerial images",                 tooltipDescription: "Highlight exact parcel boundaries on your photos" },
-        // 7-10: Property Tours
-        { name: "Same-day (tours)",            price: 3000,  description: "Same-day delivery of edited tour footage",                        tooltipDescription: "Tour delivered the same day as the shoot" },
-        { name: "Voice-over",                  price: 7500,  description: "Professional voice-over narration added to your video",           tooltipDescription: "Script-based narration recorded by a professional" },
-        { name: "Extended tour",               price: 6000,  description: "Longer cinematic tour with additional scenes",                    tooltipDescription: "More footage, more scenes, longer runtime" },
-        { name: "360° virtual tour integration", price: 9900, description: "Full 360° virtual tour integrated with your video",             tooltipDescription: "Embed an interactive 360° tour alongside your video" },
-        // 11-13: Promotional Content
-        { name: "Extra promotional video",     price: 7500,  description: "Additional promotional video cut for your campaign",              tooltipDescription: "Extra edited video clip for marketing" },
-        { name: "Custom voice-over",           price: 6000,  description: "Custom branded voice-over for promotional content",               tooltipDescription: "Tailored narration written and recorded for your brand" },
-        { name: "Extended event coverage",     price: 15000, description: "Extended aerial coverage for larger events or venues",            tooltipDescription: "Additional flight time covering more of your event" },
-        // 14-16: Roof Inspections
-        { name: "Same-day report",             price: 3000,  description: "Receive your inspection report same day",                         tooltipDescription: "Report delivered within hours of inspection" },
-        { name: "Detailed written summary",    price: 4000,  description: "Expanded written narrative accompanying annotated photos",        tooltipDescription: "More detailed written breakdown of findings" },
-        { name: "Follow-up re-inspection",     price: 9900,  description: "Follow-up drone inspection after repairs are completed",          tooltipDescription: "Verify repairs were made correctly" },
-        // 17-18: Property & Site Evaluation
-        { name: "Advanced annotated report",   price: 5000,  description: "Expanded annotated image report with detailed notes",             tooltipDescription: "More thorough annotation and written commentary" },
-        { name: "Follow-up site visit",        price: 9900,  description: "Return site visit for updated evaluation",                        tooltipDescription: "Re-inspect after changes or construction" },
-        // 19-21: Infrastructure & Structure Inspections
-        { name: "Same-day preliminary report", price: 4000,  description: "Preliminary findings report delivered same day",                  tooltipDescription: "Quick summary of findings on inspection day" },
-        { name: "Advanced structural analysis", price: 7500, description: "In-depth analysis with engineering-level commentary",             tooltipDescription: "Detailed structural integrity findings" },
-        { name: "Repeat inspection package",   price: -25000, description: "Package of 3 inspection visits at a discounted rate",            tooltipDescription: "Bundle 3 inspections for significant savings" },
-        // 22-25: Construction Planning & Monitoring
-        { name: "Additional monitoring flight", price: 19900, description: "One extra scheduled monitoring flight",                          tooltipDescription: "Add another flight to your monitoring schedule" },
-        { name: "Advanced volumetric analysis", price: 7500,  description: "Detailed earthwork and volume calculation report",               tooltipDescription: "Precise stockpile and cut/fill calculations" },
-        { name: "Same-day data delivery",      price: 5000,   description: "Processed data delivered the same day",                          tooltipDescription: "Faster turnaround on point clouds and reports" },
-        { name: "Custom CAD/GIS exports",      price: 6000,   description: "Deliverables formatted for your CAD or GIS platform",             tooltipDescription: "Files ready to import into your preferred software" },
-        // 26-29: 3D Modeling
-        { name: "Additional model refinement", price: 7500,   description: "Extra refinement pass on your 3D model",                         tooltipDescription: "Cleaner geometry and higher fidelity output" },
-        { name: "3D walkthrough video upgrade", price: 5000,  description: "Upgraded cinematic walkthrough video of your model",              tooltipDescription: "Polished animated walkthrough instead of basic export" },
-        { name: "CAD integration",             price: 9900,   description: "Deliverables formatted for CAD software integration",             tooltipDescription: "Import-ready files for AutoCAD, Revit, etc." },
-        { name: "Rush processing",             price: 6000,   description: "Expedited processing and delivery of your 3D model",              tooltipDescription: "Move to the front of the processing queue" },
-        // 30-37: Aerial Mapping
-        { name: "Topographic Contour Map",     price: 9900,   description: "Contour map overlaid on your orthomosaic for terrain analysis",   tooltipDescription: "Precise elevation contour lines derived from flight data" },
-        { name: "Digital Elevation Model (DEM)", price: 9900, description: "Digital elevation model showing surface height data",              tooltipDescription: "Grid-based surface elevation for GIS analysis" },
-        { name: "Digital Terrain Model (DTM)", price: 11900,  description: "Bare-earth terrain model with vegetation and structures removed",  tooltipDescription: "Ground-level elevation model for engineering use" },
-        { name: "Basic Volumetric / Stockpile Report", price: 12900, description: "Cut/fill and stockpile volume calculations from your map",   tooltipDescription: "Accurate volume measurements for earthwork and inventory" },
-        { name: "Contour Lines + Elevation Data Package", price: 14900, description: "Full contour line overlay plus raw elevation data export", tooltipDescription: "Contours and elevation data bundled together" },
-        { name: "Advanced Mapping Package (Ortho + DEM + Contours)", price: 19900, description: "Complete mapping package: ortho, DEM, and contours in one", tooltipDescription: "Everything you need for comprehensive site analysis" },
-        { name: "Custom CAD/GIS Export & Layering", price: 7500, description: "Deliverables formatted and layered for your CAD or GIS platform", tooltipDescription: "Import-ready files in GeoTIFF, KML, DXF, and more" },
-        { name: "Same-day Delivery",           price: 4000,   description: "Receive your processed aerial map the same day as capture",        tooltipDescription: "Rush processing and delivery on capture day" },
-        // 38-41: Timelapse Creation
-        { name: "Extended capture period",     price: 15000,  description: "Add one additional week of capture to your timelapse project",    tooltipDescription: "An extra week of scheduled flights" },
-        { name: "4K cinematic upgrade",        price: 7500,   description: "Upgrade your timelapse to 4K cinematic quality",                 tooltipDescription: "Full 4K resolution with cinematic color grade" },
-        { name: "Same-day preview clips",      price: 4000,   description: "Receive rough preview clips the same day as capture",             tooltipDescription: "Quick look at your footage before final delivery" },
-        { name: "Multiple angle timelapse",    price: 9900,   description: "Timelapse captured from two or more distinct angles",             tooltipDescription: "Adds a second camera position for variety" },
+        /* 0 */ { name: "Extra 5 Photos",                        price: 3000,  description: "Add 5 additional edited aerial photos to your package",          tooltipDescription: "+5 professionally edited aerial photos" },
+        /* 1 */ { name: "Social Media Crop Pack",                price: 3500,  description: "Vertical and square crops optimized for Instagram, Facebook, and TikTok", tooltipDescription: "Platform-ready crops in every standard social format" },
+        /* 2 */ { name: "Extra Edited Video Cut",                price: 7500,  description: "An additional edited video cut from your footage",                tooltipDescription: "Extra finished video clip for your marketing campaign" },
+        /* 3 */ { name: "Extended Site Coverage",                price: 10000, description: "Additional flight time covering more of your property or venue",   tooltipDescription: "Expands coverage to a larger area or additional angles" },
+        /* 4 */ { name: "Additional Structure on Same Property",  price: 7500,  description: "Add a second structure on the same property to your inspection",   tooltipDescription: "Covers a garage, shed, or outbuilding on the same visit" },
+        /* 5 */ { name: "Follow-Up Visit",                       price: 9900,  description: "Return visit to the same site for an updated inspection",          tooltipDescription: "Ideal after repairs or changes are completed" },
+        /* 6 */ { name: "Thermal Imaging",                       price: 9900,  description: "Add thermal/infrared imaging to detect heat anomalies",            tooltipDescription: "Detects heat anomalies invisible to a standard camera" },
+        /* 7 */ { name: "Extended Property Coverage",            price: 7500,  description: "Expanded coverage for larger acreage or multi-building properties", tooltipDescription: "Extends the evaluation to additional structures or acreage" },
+        /* 8 */ { name: "Additional Structure on Same Site",     price: 10000, description: "Add a second structure on the same site to your inspection",       tooltipDescription: "Covers a second building or span on the same visit" },
+        /* 9 */ { name: "Custom CAD/GIS Export Formatting",      price: 7500,  description: "Deliverables formatted and layered for your specific CAD or GIS platform", tooltipDescription: "Import-ready files in GeoTIFF, KML, DXF, and more" },
+        /* 10 */ { name: "Additional One-Off Monitoring Flight",  price: 10000, description: "One extra visit outside your regular schedule",                    tooltipDescription: "Add a single unscheduled capture to your recurring plan" },
+        /* 11 */ { name: "Rendered Fly-Through Video Export",     price: 15000, description: "Cinematic animated fly-through rendered from your Digital Twin",   tooltipDescription: "Polished video walkthrough exported from the 3D model" },
+        /* 12 */ { name: "Custom-Branded Embeddable Viewer",      price: 5000,  description: "Your Digital Twin embedded in a branded viewer with your logo and colors", tooltipDescription: "White-labeled viewer you can embed on your own website" },
+        /* 13 */ { name: "Extended/Upgraded Project Story Video", price: 15000, description: "A professionally edited project narrative video compiled from your Foundation to Finish footage", tooltipDescription: "Full cinematic story of your project from groundbreak to completion" },
       ];
 
       const insertedAddonIds: number[] = [];
@@ -135,134 +114,201 @@ export async function initializeDatabase() {
 
       // ── Services ─────────────────────────────────────────────────────────────
       const defaultServices = [
-        // Real Estate & Marketing
+        // ── Real Estate & Marketing ────────────────────────────────────────────
         {
           name: "Real Estate Listings",
-          description: "Professional drone photography and video that makes properties stand out on MLS, websites, and social media. Choose from four value-packed packages.",
-          price: 11900,
+          slug: "real-estate-listings",
+          description: "Professional drone photography and video that makes properties stand out on MLS, websites, and social media.",
+          price: 12500,
           pricingType: "range_based",
-          priceRanges: [{ minPrice: 11900, maxPrice: 32900, label: "4 value-packed packages" }],
+          priceRanges: [
+            { minPrice: 12500, maxPrice: 12500, label: "Stills Only" },
+            { minPrice: 19900, maxPrice: 19900, label: "Stills + Video" },
+            { minPrice: 27500, maxPrice: 27500, label: "Stills + Video + Twilight" },
+            { minPrice: 32500, maxPrice: 32500, label: "Full Showcase" },
+          ],
           category: "Real Estate & Marketing",
           folderStructure: ["01_Raw_Photos", "02_Edited_Photos", "03_Final_Delivery", "04_Client_Gallery"],
           imageUrl: "/uploads/svc-real-estate-listings.png",
-          features: ["High-resolution aerial photos and cinematic video with DJI Air 3S", "Professional color correction, straightening, and enhancement", "Fast 48-hour digital delivery via secure gallery", "Watermark-free files optimized for MLS and web use", "FAA Part 107 compliant with full insurance", "Local travel included in 84780 / St. George area", "Subtle logo option available", "Expert pilot with real estate marketing experience"],
-          addonIndices: [0, 1, 2, 4, 5, 6],
+          features: ["High-resolution aerial photos and cinematic video", "Professional color correction and enhancement", "Fast 48-hour digital delivery via secure gallery", "Watermark-free files optimized for MLS and web use", "Expert pilot with real estate marketing experience", "Subtle logo option available"],
+          addonIndices: [0, 1],
         },
         {
           name: "Property Tours",
-          description: "Immersive cinematic drone tours that give buyers a complete understanding of the property layout, surroundings, and key features.",
-          price: 34900,
-          pricingType: "flat",
+          slug: "property-tours",
+          description: "An immersive, buyer-navigable tour of a property — a true-to-life 3D walkthrough of the interior, paired with your choice of cinematic aerial video or a full 3D exterior twin.",
+          price: 0,
+          pricingType: "composite",
           priceRanges: [],
           category: "Real Estate & Marketing",
-          folderStructure: ["01_Raw_Footage", "02_Edited_Tour", "03_Final_Video", "04_Photos"],
+          folderStructure: ["01_Indoor_Digital_Twin", "02_Outdoor_Content", "03_Final_Delivery"],
           imageUrl: "/uploads/svc-property-tours.png",
-          features: ["Full cinematic video tour with smooth transitions and music", "High-resolution aerial photos included", "Optional 360° virtual tour integration", "Professional editing with text overlays and pacing", "Optimized for websites, MLS, and virtual showings", "Fast 48-hour delivery", "Local St. George area travel included", "Expert shot planning based on your listing needs"],
-          addonIndices: [0, 2, 7, 8, 9, 10],
+          features: ["Indoor: navigable 3D Digital Twin walkthrough of the interior", "Outdoor: your choice of cinematic aerial video or full 3D exterior twin", "Photorealistic and fully explorable from any angle", "Price is computed from component services — see 3D Digital Twin and Real Estate Listings"],
+          addonIndices: [],
         },
         {
           name: "Promotional Content",
-          description: "Custom aerial imagery and video for businesses, events, grand openings, resorts, and marketing campaigns.",
-          price: 39900,
+          slug: "promotional-content",
+          description: "Aerial imagery and video that showcases your business, resort, or golf course — built for branding and marketing.",
+          price: 35000,
           pricingType: "flat",
           priceRanges: [],
           category: "Real Estate & Marketing",
           folderStructure: ["01_Raw_Photos", "02_Raw_Footage", "03_Edited_Content", "04_Social_Formats", "05_Final_Delivery"],
           imageUrl: "/uploads/svc-promotional-content.png",
-          features: ["Dynamic before-and-after shots and scenic overviews", "Professional cinematic video with music and transitions", "High-resolution stills for print and digital use", "Trending vertical formats for social platforms", "Creative concept development with client input", "Fast turnaround and multiple file formats", "Local travel in 84780 area included", "Brand-elevating visuals that capture attention"],
-          addonIndices: [0, 1, 2, 11, 12, 13],
+          features: ["Dynamic aerial overviews of your property or venue", "Professional cinematic video with music and transitions", "High-resolution stills for print and digital use", "Creative concept development with client input", "Fast turnaround and multiple file formats", "Brand-elevating visuals that capture attention"],
+          addonIndices: [2, 3],
         },
-        // Property Inspections
+        // ── Property Inspections ───────────────────────────────────────────────
         {
           name: "Roof Inspections",
-          description: "Safe, detailed drone roof inspections for residential and commercial properties without ladders or risk.",
-          price: 17900,
+          slug: "roof-inspections",
+          description: "Detailed drone roof inspections, including a full 360° tour of the roof alongside close, high-resolution images of every section — so you have complete coverage to review yourself or share with your roofer or insurance adjuster.",
+          price: 30000,
           pricingType: "flat",
           priceRanges: [],
           category: "Property Inspections",
-          folderStructure: ["01_Raw_Inspection_Photos", "02_Annotated_Images", "03_Inspection_Report"],
+          folderStructure: ["01_360_Tour_Pass", "02_Detail_Images", "03_Final_Delivery"],
           imageUrl: "/uploads/svc-roof-inspections.png",
-          features: ["Close-up high-resolution imagery of all roof surfaces", "Damage assessment (hail, storm, wear)", "Annotated photos highlighting issues", "Professional PDF inspection report", "Fast 24–48 hour delivery", "FAA compliant and fully insured", "Local St. George service", "Ideal for homeowners, property managers, and adjusters"],
-          addonIndices: [3, 14, 15, 16],
+          features: ["Full 360° tour pass of the entire roof", "Close, high-resolution detail images of every roof section", "Complete imagery package — no ladders or climbing required", "Ideal for homeowners, property managers, roofing companies, and insurance adjusters", "Fast 48-hour digital delivery", "Custom quote for commercial properties and multi-building sites"],
+          addonIndices: [4, 5, 6],
+          addonEnabled: { 6: false }, // Thermal Imaging disabled by default
         },
         {
           name: "Property & Site Evaluation",
+          slug: "property-site-evaluation",
           description: "Comprehensive aerial inspection and analysis for pre-purchase due diligence, condition assessment, development planning, and insurance documentation.",
-          price: 29900,
+          price: 27500,
           pricingType: "flat",
           priceRanges: [],
           category: "Property Inspections",
           folderStructure: ["01_Raw_Photos", "02_Raw_Footage", "03_Annotated_Report", "04_Final_Delivery"],
           imageUrl: "/uploads/svc-property-site-evaluation.png",
-          features: ["High-resolution aerial photos and video of entire property", "Detailed visual condition assessment", "Annotated images and professional summary report", "Insurance-ready documentation for claims", "Layout, surroundings, and neighborhood context", "Fast 48-hour delivery", "Local 84780 area travel included", "Perfect for investors, buyers, sellers, and adjusters"],
-          addonIndices: [0, 1, 3, 17, 18],
+          features: ["High-resolution aerial photos and video of entire property", "Detailed visual condition assessment", "Annotated images and professional summary report", "Insurance-ready documentation for claims", "Layout, surroundings, and neighborhood context", "Fast 48-hour delivery"],
+          addonIndices: [5, 7],
         },
         {
-          name: "Infrastructure & Structure Inspections",
-          description: "Professional drone inspections of cell towers, antennas, utility structures, bridges, and other hard-to-reach infrastructure.",
-          price: 34900,
+          name: "Structural Inspections",
+          slug: "structural-inspections",
+          description: "Safe, detailed aerial inspections of buildings, bridges, and infrastructure — without the cost or risk of a climbing crew.",
+          price: 40000,
           pricingType: "flat",
           priceRanges: [],
           category: "Property Inspections",
-          folderStructure: ["01_Raw_Inspection_Photos", "02_Annotated_Images", "03_Compliance_Report", "04_Final_Delivery"],
+          folderStructure: ["01_Raw_Inspection_Photos", "02_Annotated_Images", "03_Findings_Report", "04_Final_Delivery"],
           imageUrl: "/uploads/svc-infrastructure-inspections.png",
-          features: ["Safe, high-resolution close-up imagery", "Detailed visual integrity assessment", "Annotated photos and compliance documentation", "Professional PDF report", "No need for expensive climbing crews", "Fast turnaround", "Fully insured and FAA compliant", "Local service in southern Utah"],
-          addonIndices: [3, 19, 20, 21],
+          features: ["Safe, high-resolution close-up imagery of every structure section", "Visual integrity assessment for damage, wear, and anomalies", "Annotated images and professional findings report", "No need for expensive climbing crews", "Custom quote for large, multi-structure, or unusually complex sites"],
+          addonIndices: [5, 6, 8],
+          addonEnabled: { 6: false }, // Thermal Imaging disabled by default
         },
-        // Mapping & Modeling
-        {
-          name: "Construction Planning & Monitoring",
-          description: "High-accuracy drone surveying for point clouds, topographic maps, volume calculations, and ongoing construction progress monitoring.",
-          price: 54900,
-          pricingType: "flat",
-          priceRanges: [],
-          category: "Mapping & Modeling",
-          folderStructure: ["01_Raw_Images", "02_Point_Cloud", "03_Topographic_Maps", "04_Progress_Reports", "05_GIS_Export"],
-          imageUrl: "/uploads/svc-construction-planning.png",
-          features: ["Dense point cloud generation", "Topographic maps and contour lines", "Accurate stockpile / earthwork volume calculations", "Regular progress monitoring flights", "Before/after comparison overlays", "GIS-ready deliverables (LAS, DEM, etc.)", "Professional reports with visuals", "Local 84780 area service"],
-          addonIndices: [22, 23, 24, 25],
-        },
+        // ── Mapping & Site Data ────────────────────────────────────────────────
         {
           name: "Aerial Mapping",
-          description: "High-accuracy orthomosaic maps and advanced 2D data products for site planning, land surveying, and precision analysis. Every package includes a geo-referenced orthomosaic map with optional elevation, contour, and volumetric add-ons.",
-          price: 25000,
-          pricingType: "flat",
+          slug: "aerial-mapping",
+          description: "Survey-grade-accuracy aerial mapping data — orthomosaics, elevation models, contours, and volumetric reports — available as a one-time capture or an ongoing recurring service to track changes over time.",
+          price: 40000,
+          pricingType: "tiered",
+          pricingTiers: [
+            { name: "Small Lot (under 1 acre)", price: 40000, priceType: "fixed", description: "Flat rate for sites under 1 acre" },
+            { name: "1–5 acres", price: 20000, priceType: "fixed", description: "Per acre", quantityUnit: "acre" },
+            { name: "5–20 acres", price: 15000, priceType: "fixed", description: "Per acre", quantityUnit: "acre" },
+            { name: "20+ acres", price: 0, priceType: "quote", description: "Custom quote — contact us for large-site pricing" },
+          ],
           priceRanges: [],
-          category: "Mapping & Modeling",
-          folderStructure: ["01_Flight_&_Data_Capture", "02_Processing/Orthomosaic", "02_Processing/Elevation_Data", "02_Processing/Contour_Maps", "02_Processing/Volumetric_Reports", "03_Deliverables/GIS_Files", "03_Deliverables/CAD_Exports", "03_Deliverables/Client_Formats", "Raw_Data", "Edited_Assets"],
+          category: "Mapping & Site Data",
+          folderStructure: ["01_Flight_Data", "02_Orthomosaic", "03_Elevation_Data", "04_Contour_Maps", "05_Volumetric_Reports", "06_GIS_CAD_Exports", "07_Final_Delivery"],
           imageUrl: "/uploads/svc-aerial-mapping.png",
-          features: ["Orthomosaic map included in every package", "Geo-referenced for accurate real-world measurements", "Topographic contour maps and elevation data available", "Digital Elevation Model (DEM) and Digital Terrain Model (DTM) outputs", "Volumetric and stockpile calculations", "GIS-ready and CAD-compatible export formats", "Measurable dimensions and scale for planning", "Professional delivery in 48 hours"],
-          addonIndices: [30, 31, 32, 33, 34, 35, 36, 37],
+          features: ["Geo-referenced orthomosaic included with every capture", "Elevation models and contour data available", "Volumetric and stockpile calculations", "GIS-ready and CAD-compatible export formats", "One-time capture or recurring subscription cadence", "Measurable dimensions and scale for planning and engineering reference"],
+          disclaimer: "Apollo DroneWorks is not a licensed land surveying firm, and our pilots are not licensed surveyors. Aerial Mapping deliverables provide survey-grade-accuracy data suitable for planning, design, and engineering reference, but are not a substitute for a licensed boundary survey. For legal property boundaries or stamped survey documentation, please consult a licensed Professional Land Surveyor.",
+          addonIndices: [9],
+          monthlySubscriptionEnabled: true,
+          frequencyDetails: "Custom cadence — weekly, bi-weekly, or monthly recurring capture based on project needs. Contact us for subscription pricing.",
         },
         {
-          name: "3D Modeling",
-          description: "Professional as-built 3D models and point clouds created from drone photogrammetry for documentation, verification, and project visualization.",
-          price: 59900,
-          pricingType: "flat",
+          name: "Construction Monitoring / Timelapse",
+          slug: "construction-monitoring-timelapse",
+          description: "Recurring site visits that document your project's progress — choose Progress Documentation for a timestamped visual record, or Cinematic Timelapse for a polished video built for marketing.",
+          price: 30000,
+          pricingType: "tiered",
+          pricingTiers: [
+            { name: "Progress Documentation — Standard", style: "progress",  tier: "standard", price: 30000, priceType: "fixed", description: "Per visit — timestamped photo and video record" },
+            { name: "Progress Documentation — Premium",  style: "progress",  tier: "premium",  price: 40000, priceType: "fixed", description: "Per visit — enhanced coverage and faster delivery" },
+            { name: "Cinematic Timelapse — Standard",    style: "timelapse", tier: "standard", price: 37500, priceType: "fixed", description: "Per visit — min 8 visits recommended", minRecommendedVisits: 8 },
+            { name: "Cinematic Timelapse — Premium",     style: "timelapse", tier: "premium",  price: 47500, priceType: "fixed", description: "Per visit — premium edit; min 8 visits recommended", minRecommendedVisits: 8 },
+          ],
           priceRanges: [],
-          category: "Mapping & Modeling",
-          folderStructure: ["01_Raw_Images", "02_Point_Cloud", "03_Mesh_Model", "04_Textured_Model", "05_Walkthrough_Video", "06_Final_Export"],
-          imageUrl: "/uploads/svc-3d-modeling.png",
-          features: ["Dense photogrammetry data capture", "Accurate 3D model creation", "Point cloud generation and cleanup", "Multiple export formats (OBJ, FBX, etc.)", "Walkthrough video included", "Ideal for BIM, engineering, and as-built records", "High precision with DJI Air 3S", "Fast professional delivery"],
-          addonIndices: [26, 27, 28, 29],
+          category: "Mapping & Site Data",
+          folderStructure: ["01_Raw_Visit_Captures", "02_Edited_Output", "03_Project_Archive_Gallery", "04_Final_Delivery"],
+          imageUrl: "/uploads/svc-construction-monitoring.png",
+          features: ["Style A — Progress Documentation: timestamped photo and video record of every visit", "Style B — Cinematic Timelapse: a polished, professionally edited marketing video", "Client sets the cadence: monthly, milestone-based, or more frequent", "Cinematic Timelapse includes licensed background music; music-free cut available on request", "Minimum 8 visits recommended for Cinematic Timelapse for a smooth final cut"],
+          addonIndices: [10],
+          monthlySubscriptionEnabled: true,
+          frequencyDetails: "Client-set cadence — monthly, milestone-based, weekly, or custom",
+        },
+        // ── Construction Lifecycle & 3D Digital Twins ──────────────────────────
+        {
+          name: "3D Digital Twin",
+          slug: "3d-digital-twin",
+          description: "A photorealistic, fully navigable 3D model of a property's interior, exterior, or both — built so you can explore a space from any angle, anywhere, anytime.",
+          price: 40000,
+          pricingType: "tiered",
+          pricingTiers: [
+            { name: "Indoor — Under 3,000 sq ft",                             scope: "indoor",           priceType: "range", price: 40000,  minPrice: 40000,  maxPrice: 60000  },
+            { name: "Indoor — 3,000–6,000 sq ft",                             scope: "indoor_large",     priceType: "range", price: 60000,  minPrice: 60000,  maxPrice: 90000  },
+            { name: "Outdoor — Standard (single property/lot)",                scope: "outdoor_standard", priceType: "range", price: 75000,  minPrice: 75000,  maxPrice: 120000 },
+            { name: "Outdoor — Premium (larger acreage/multiple structures)",  scope: "outdoor_premium",  priceType: "range", price: 150000, minPrice: 150000, maxPrice: 300000 },
+          ],
+          priceRanges: [],
+          category: "Construction Lifecycle & 3D Digital Twins",
+          folderStructure: ["01_Raw_Capture", "02_Processed_Splat_Data", "03_Digital_Twin_Viewer_Files", "04_Renders_And_Video", "05_Final_Delivery"],
+          imageUrl: "/uploads/svc-3d-digital-twin.png",
+          features: ["Select Indoor, Outdoor, or both — price updates live", "Indoor: photorealistic capture of every room", "Outdoor: full exterior twin including structure and lot", "Explore from any angle, on any device", "25% discount when both Indoor and Outdoor are selected together", "Embeddable viewer link delivered with your files"],
+          addonIndices: [11, 12],
         },
         {
-          name: "Timelapse Creation",
-          description: "Dynamic construction progress timelapse videos documenting changes over days, weeks, or months.",
-          price: 54900,
-          pricingType: "flat",
+          name: "Rough-In Digital Twin",
+          slug: "rough-in-digital-twin",
+          description: "A complete 3D digital record of your home at the one moment that matters most — right before drywall goes up, when every pipe, wire, and duct is still visible.",
+          price: 70000,
+          pricingType: "tiered",
+          pricingTiers: [
+            { name: "Standard", priceType: "fixed", price: 70000,  description: "Single-family home rough-in capture" },
+            { name: "Premium",  priceType: "fixed", price: 115000, description: "Larger home or more complex rough-in" },
+          ],
           priceRanges: [],
-          category: "Mapping & Modeling",
-          folderStructure: ["01_Raw_Frames", "02_Processed_Timelapse", "03_Final_Video", "04_Archive"],
-          imageUrl: "/uploads/svc-timelapse-creation.png",
-          features: ["Professional camera positioning and interval setup", "Multi-day or multi-week capture", "Stabilized, color-graded final video", "Speed ramping and cinematic editing", "Music and text overlays available", "Raw frames available upon request", "Ideal for project marketing and records", "Local southern Utah service"],
-          addonIndices: [38, 39, 40, 41],
+          category: "Construction Lifecycle & 3D Digital Twins",
+          folderStructure: ["01_Raw_Capture", "02_Processed_Splat_Data", "03_Digital_Twin_Viewer_Files", "04_Final_Delivery"],
+          imageUrl: "/uploads/svc-rough-in-digital-twin.png",
+          features: ["Exterior and interior capture at the rough-in / pre-drywall stage", "Every pipe, wire, and duct permanently documented in 3D", "Full credit toward Foundation to Finish or 3D Digital Twin if you upgrade later", "One-time capture — this window closes the moment drywall goes up"],
+          addonIndices: [],
+        },
+        {
+          name: "Foundation to Finish",
+          slug: "foundation-to-finish",
+          description: "From the first stake in the ground to the final walkthrough, we follow your project the whole way. Apollo DroneWorks documents your build from bare dirt through completion, then delivers a complete, photorealistic 3D Digital Twin of the finished property — inside and out. Already under construction? No problem — we can step in at any stage and pick up documentation from wherever your project stands today.",
+          price: 247500,
+          pricingType: "tiered",
+          pricingTiers: [
+            { name: "Phase 1 — Baseline Mapping",       phase: 1,    priceType: "fixed", price: 50000,  premiumPrice: 80000,  description: "Initial aerial mapping of the bare-ground site" },
+            { name: "Phase 2B — Rough-In Digital Twin", phase: "2b", priceType: "fixed", price: 70000,  premiumPrice: 115000, description: "Full Digital Twin at rough-in / pre-drywall stage" },
+            { name: "Phase 3 — Completion Marketing",   phase: 3,    priceType: "fixed", price: 30000,  premiumPrice: 45000,  description: "Aerial photography and video at project completion" },
+            { name: "Phase 4 — Outdoor Digital Twin",   phase: 4,    priceType: "fixed", price: 90000,  premiumPrice: 150000, description: "Full exterior Digital Twin of the finished property" },
+            { name: "Phase 5 — Indoor Digital Twin",    phase: 5,    priceType: "fixed", price: 50000,  premiumPrice: 75000,  description: "Full interior Digital Twin of the finished home" },
+            { name: "Phase 6 — Final Assembly & Delivery", phase: 6, priceType: "fixed", price: 40000,  premiumPrice: 60000,  description: "Assembly of the full project archive and combined twin" },
+          ],
+          priceRanges: [],
+          category: "Construction Lifecycle & 3D Digital Twins",
+          folderStructure: ["01_Baseline_Mapping", "02_Progress_Documentation", "03_RoughIn_Digital_Twin", "04_Completion_Marketing", "05_Outdoor_Digital_Twin", "06_Indoor_Digital_Twin", "07_Final_Combined_Twin_And_Project_Archive"],
+          imageUrl: "/uploads/svc-foundation-to-finish.png",
+          features: ["Entry-point selector — we step in wherever your project stands today", "Phase 1: Baseline aerial mapping of bare ground", "Phase 2B: Rough-In Digital Twin before drywall goes up", "Phase 3: Completion marketing photo and video", "Phase 4: Outdoor Digital Twin of the finished exterior", "Phase 5: Indoor Digital Twin of the finished interior", "Phase 6: Full project archive and combined twin delivery", "25% bundle discount applied to all selected phases", "Want regular progress visits too? Add Construction Monitoring separately."],
+          addonIndices: [13],
+          addonEnabled: { 13: false }, // Project Story Video disabled by default
         },
       ];
 
       const insertedServiceIds: Array<{ name: string; id: number }> = [];
       for (const svc of defaultServices) {
-        const { addonIndices, ...svcData } = svc;
+        const { addonIndices, addonEnabled, ...svcData } = svc as any;
         const rows = await db.insert(services).values(svcData).returning({ id: services.id, name: services.name });
         insertedServiceIds.push(rows[0]);
       }
@@ -271,56 +317,51 @@ export async function initializeDatabase() {
       // ── Service-addon links ───────────────────────────────────────────────────
       let linkCount = 0;
       for (const svc of defaultServices) {
-        const svcRow = insertedServiceIds.find(r => r.name === svc.name);
+        const { addonIndices, addonEnabled } = svc as any;
+        const svcRow = insertedServiceIds.find(r => r.name === (svc as any).name);
         if (!svcRow) continue;
-        for (const idx of svc.addonIndices) {
+        for (const idx of (addonIndices as number[])) {
           const addonId = insertedAddonIds[idx];
           if (!addonId) continue;
+          const isEnabled = (addonEnabled as Record<number, boolean> | undefined)?.[idx] ?? true;
           await db.execute(
             sql`INSERT INTO service_addons (service_id, addon_id, is_enabled)
-                VALUES (${svcRow.id}, ${addonId}, true)
-                ON CONFLICT (service_id, addon_id) DO NOTHING`
+                VALUES (${svcRow.id}, ${addonId}, ${isEnabled})`
           );
           linkCount++;
         }
       }
       console.log(`Seeded ${linkCount} service-addon links.`);
 
-      // ── Display order for Mapping & Modeling category ─────────────────────────
-      const mappingOrder: Record<string, number> = {
-        "Construction Planning & Monitoring": 70,
-        "Aerial Mapping": 80,
-        "3D Modeling": 90,
-        "Timelapse Creation": 100,
+      // ── Display order for new categories ─────────────────────────────────────
+      const displayOrder: Record<string, number> = {
+        "Real Estate Listings": 10,
+        "Property Tours": 20,
+        "Promotional Content": 30,
+        "Roof Inspections": 40,
+        "Property & Site Evaluation": 50,
+        "Structural Inspections": 60,
+        "Aerial Mapping": 70,
+        "Construction Monitoring / Timelapse": 75,
+        "3D Digital Twin": 80,
+        "Rough-In Digital Twin": 85,
+        "Foundation to Finish": 90,
       };
       for (const { name, id } of insertedServiceIds) {
-        if (mappingOrder[name] !== undefined) {
-          await db.update(services).set({ displayOrder: mappingOrder[name] }).where(eq(services.id, id));
+        if (displayOrder[name] !== undefined) {
+          await db.update(services).set({ displayOrder: displayOrder[name] }).where(eq(services.id, id));
         }
       }
 
-      // ── Aerial Mapping bundle configurations ──────────────────────────────────
-      const aerialMappingRow = insertedServiceIds.find(s => s.name === "Aerial Mapping");
-      if (aerialMappingRow) {
-        // Real Estate Listings is range_based ($119–$329); the $20 savings applies to
-        // Aerial Mapping itself via the name-based fallback in the UI, not customPrice.
-        const bundleSavingsCustomPrice: Record<string, number> = {
-          "Property Tours": 29900,
-          "Promotional Content": 34900,
-          "Roof Inspections": 14900,
-          "Property & Site Evaluation": 24900,
-          "Infrastructure & Structure Inspections": 29900,
-          "Construction Planning & Monitoring": 44900,
-          "3D Modeling": 49900,
-          "Timelapse Creation": 44900,
-        };
-        const bundleConfigurations = insertedServiceIds
-          .filter(s => s.name !== "Aerial Mapping" && bundleSavingsCustomPrice[s.name] !== undefined)
-          .map(s => ({ serviceId: s.id, customPrice: bundleSavingsCustomPrice[s.name] }));
-        await db.update(services)
-          .set({ bundleConfigurations })
-          .where(eq(services.id, aerialMappingRow.id));
-        console.log(`Set ${bundleConfigurations.length} bundle configurations on Aerial Mapping.`);
+      // ── Rush order pricing for all seeded services ────────────────────────────
+      for (const { id } of insertedServiceIds) {
+        const existing = await db.execute(sql`SELECT id FROM rush_order_pricing WHERE service_id = ${id} LIMIT 1`);
+        if ((existing.rows as unknown[]).length === 0) {
+          await db.execute(sql`
+            INSERT INTO rush_order_pricing (service_id, rush_multiplier, minimum_notice_hours, is_active)
+            VALUES (${id}, 1.25, 24, true)
+          `);
+        }
       }
     }
     
@@ -868,7 +909,31 @@ export async function initializeDatabase() {
     } catch (error) {
       console.error('Error with tables:', error);
     }
-    
+
+    // Service catalog rebuild (idempotent — skips if 3D Digital Twin already exists)
+    try {
+      const { rebuildServiceCatalog } = await import('./migrations/rebuild-service-catalog');
+      await rebuildServiceCatalog();
+    } catch (err) {
+      console.error('Error in rebuild-service-catalog migration:', err);
+    }
+
+    // Populate service-addon links if missing (handles partial-seed recovery)
+    try {
+      const { populateServiceAddonLinks } = await import('./migrations/populate-service-addon-links');
+      await populateServiceAddonLinks();
+    } catch (err) {
+      console.error('Error in populate-service-addon-links migration:', err);
+    }
+
+    // Populate rush order pricing if missing (handles partial-seed recovery)
+    try {
+      const { populateRushOrderPricing } = await import('./migrations/populate-rush-order-pricing');
+      await populateRushOrderPricing();
+    } catch (err) {
+      console.error('Error in populate-rush-order-pricing migration:', err);
+    }
+
     console.log('Database initialization complete.');
   } catch (error) {
     console.error('Error initializing database:', error);

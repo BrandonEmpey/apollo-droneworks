@@ -23,7 +23,7 @@ const CASE_STUDIES: Record<string, Array<{ title: string; result: string; metric
   "agriculture": [
     { title: "Washington County Farm", result: "NDVI mapping revealed irrigation inefficiency, saving 30% water use", metric: "–30%", icon: <TrendingUp className="h-5 w-5 text-gold" /> },
     { title: "Hurricane Orchard", result: "Identified pest outbreak 2 weeks before visible damage appeared", metric: "2 wks", icon: <Clock className="h-5 w-5 text-gold" /> },
-    { title: "Crop Acreage Survey", result: "400-acre survey completed in 4 hours vs. 3 days manual", metric: "4 hrs", icon: <Star className="h-5 w-5 text-gold" /> },
+    { title: "Crop Acreage Mapping", result: "400-acre mapping flight completed in 4 hours vs. 3 days manual", metric: "4 hrs", icon: <Star className="h-5 w-5 text-gold" /> },
   ],
 };
 

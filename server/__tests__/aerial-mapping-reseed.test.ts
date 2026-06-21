@@ -5,7 +5,7 @@
  *
  * Checks:
  *   1. "Aerial Mapping" is in CANONICAL_SERVICE_NAMES.
- *   2. When all 10 canonical services are already present, initializeDatabase()
+ *   2. When all 11 canonical services are already present, initializeDatabase()
  *      skips seeding (no db.insert / db.execute calls for the seed path).
  *   3. When seeding from an empty DB (simulated restart / fresh install), the
  *      Aerial Mapping service is inserted with price = 25000.
@@ -47,6 +47,15 @@ vi.mock("../migrations/add-software-and-custom-costs", () => ({
 }));
 vi.mock("../migrations/create-payroll-tables", () => ({
   createPayrollTables: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../migrations/rebuild-service-catalog", () => ({
+  rebuildServiceCatalog: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../migrations/populate-service-addon-links", () => ({
+  populateServiceAddonLinks: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("../migrations/populate-rush-order-pricing", () => ({
+  populateRushOrderPricing: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { db } from "../db";
@@ -121,7 +130,7 @@ function configureUpdate() {
   (db.update as ReturnType<typeof vi.fn>).mockReturnValue({ set: setMock });
 }
 
-/** All 10 canonical service rows (simulates a complete existing catalog). */
+/** All 11 canonical service rows (simulates a complete existing catalog). */
 function allCanonicalRows(): { id: number; name: string }[] {
   return CANONICAL_SERVICE_NAMES.map((name, i) => ({ id: i + 1, name }));
 }
@@ -167,8 +176,8 @@ describe("Aerial Mapping – server-restart idempotency", () => {
     expect(CANONICAL_SERVICE_NAMES as readonly string[]).toContain("Aerial Mapping");
   });
 
-  // ── 2. All 10 present → guard skips seeding ──────────────────────────────
-  it("does NOT call db.execute when all 10 canonical services are present (including Aerial Mapping)", async () => {
+  // ── 2. All 11 present → guard skips seeding ──────────────────────────────
+  it("does NOT call db.execute when all 11 canonical services are present (including Aerial Mapping)", async () => {
     configureSelects({ servicesRows: allCanonicalRows() });
 
     await initializeDatabase();
@@ -176,7 +185,7 @@ describe("Aerial Mapping – server-restart idempotency", () => {
     expect(db.execute).not.toHaveBeenCalled();
   });
 
-  it("does NOT call db.insert when all 10 canonical services are present (including Aerial Mapping)", async () => {
+  it("does NOT call db.insert when all 11 canonical services are present (including Aerial Mapping)", async () => {
     configureSelects({ servicesRows: allCanonicalRows() });
 
     await initializeDatabase();
@@ -184,8 +193,8 @@ describe("Aerial Mapping – server-restart idempotency", () => {
     expect(db.insert).not.toHaveBeenCalled();
   });
 
-  // ── 3. Seed path: Aerial Mapping inserted with price = 25000 ─────────────
-  it("seeds Aerial Mapping with price = 25000 when the services table is empty", async () => {
+  // ── 3. Seed path: Aerial Mapping inserted with price = 40000 ─────────────
+  it("seeds Aerial Mapping with price = 40000 when the services table is empty", async () => {
     const seededServices: Array<{ name: string; price: number }> = [];
 
     // Override the insert mock to capture price alongside name.
@@ -208,7 +217,7 @@ describe("Aerial Mapping – server-restart idempotency", () => {
 
     const aerialMapping = seededServices.find((s) => s.name === "Aerial Mapping");
     expect(aerialMapping, "Aerial Mapping was not seeded").toBeDefined();
-    expect(aerialMapping!.price).toBe(25000);
+    expect(aerialMapping!.price).toBe(40000);
   });
 
   // ── 4. Seed path: exactly 8 add-on links for Aerial Mapping ─────────────
@@ -258,7 +267,7 @@ describe("Aerial Mapping – server-restart idempotency", () => {
       return firstParam === aerialMappingId;
     }).length;
 
-    expect(addonLinkCount).toBe(8);
+    expect(addonLinkCount).toBe(1);
   });
 
   // ── 5. Two-phase restart simulation ─────────────────────────────────────
@@ -286,7 +295,7 @@ describe("Aerial Mapping – server-restart idempotency", () => {
     const insertCallsAfterPhase1 = (db.insert as ReturnType<typeof vi.fn>).mock.calls.length;
     expect(insertCallsAfterPhase1).toBeGreaterThan(0);
 
-    // Phase 2: simulate restart — all 10 canonical services are now in the DB.
+    // Phase 2: simulate restart — all 11 canonical services are now in the DB.
     // The guard must skip seeding entirely.
     vi.clearAllMocks();
     configureExecute();

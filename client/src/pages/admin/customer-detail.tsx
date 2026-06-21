@@ -5,7 +5,7 @@ import Header from "@/components/layout/header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Mail, Phone, Building, MapPin, Calendar, FolderOpen, ClipboardList, DollarSign, FileCheck, ChevronRight, X, CheckCircle } from "lucide-react";
+import { ArrowLeft, Mail, Phone, Building, MapPin, Calendar, FolderOpen, ClipboardList, DollarSign, FileCheck, ChevronRight, X, CheckCircle, Handshake } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -101,6 +102,24 @@ export default function CustomerDetail() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update task.", variant: "destructive" });
+    }
+  });
+
+  const { data: partnerData, refetch: refetchPartner } = useQuery<any>({
+    queryKey: [`/api/admin/users/${customer?.userId}/partner-account`],
+    enabled: !!customer?.userId,
+  });
+
+  const togglePartnerMutation = useMutation({
+    mutationFn: async (isPartnerAccount: boolean) => {
+      return apiRequest("PATCH", `/api/admin/users/${customer.userId}/partner-account`, { isPartnerAccount });
+    },
+    onSuccess: () => {
+      refetchPartner();
+      toast({ title: "Partner status updated" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update partner status.", variant: "destructive" });
     }
   });
 
@@ -232,6 +251,30 @@ export default function CustomerDetail() {
           </div>
 
           <div className="space-y-6">
+            {customer.userId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Handshake className="h-4 w-4" />
+                    Account Settings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="partner-toggle" className="font-medium">Partner Account</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">Applies {String(partnerData?.partnerDiscountPercentage ?? 10)}% partner discount at checkout</p>
+                    </div>
+                    <Switch
+                      id="partner-toggle"
+                      checked={partnerData?.isPartnerAccount ?? false}
+                      onCheckedChange={(checked) => togglePartnerMutation.mutate(checked)}
+                      disabled={togglePartnerMutation.isPending}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>

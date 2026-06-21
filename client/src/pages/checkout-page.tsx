@@ -633,6 +633,19 @@ export default function CheckoutPage() {
                 </div>
               </div>
               
+              {/* Rough-In upgrade credit banner */}
+              {(booking as any).creditAmount > 0 && (
+                <div className="mt-2 mb-4 rounded-lg border border-emerald-700/40 bg-emerald-900/20 p-4 flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-400">Rough-In Digital Twin credit applied</p>
+                    <p className="text-xs text-offwhite/70 mt-0.5">
+                      A credit of <span className="text-emerald-400 font-medium">${((booking as any).creditAmount / 100).toLocaleString()}</span> from your Rough-In Digital Twin has been applied to this booking. The total shown already reflects this credit.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Stripe Payment Form */}
               <div className="mt-6 border border-gold-dark/20 rounded-lg p-5 bg-gradient-to-br from-[#080d17]/80 to-[#0b111f]/80">
                 <h3 className="text-xl font-semibold text-gold-light mb-6">Payment Information</h3>

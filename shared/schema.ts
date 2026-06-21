@@ -12,6 +12,7 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   phone: text("phone"),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  isPartnerAccount: boolean("is_partner_account").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -70,15 +71,25 @@ export const services = pgTable("services", {
   // Tiered pricing system
   pricingTiers: jsonb("pricing_tiers").$type<Array<{
     name?: string;
-    // Legacy single-deliverable fields — kept optional so old records still load.
-    // New tiers describe what's included via the `deliverables` array below.
+    // ── Classifier fields used by complex services ────────────────────────────
+    // For Foundation to Finish: which phase this tier represents
+    phase?: number | string;
+    // For Construction Monitoring/Timelapse: "progress" or "timelapse"
+    style?: string;
+    // For Construction Monitoring/Timelapse: "standard" or "premium"
+    tier?: string;
+    // For 3D Digital Twin: "indoor" | "indoor_large" | "outdoor_standard" | "outdoor_premium"
+    scope?: string;
+    // For Standard/Premium services: premium price alongside base price
+    premiumPrice?: number;
+    // For Cinematic Timelapse: recommended minimum visit count
+    minRecommendedVisits?: number;
+    // ── Legacy single-deliverable fields ─────────────────────────────────────
     minQuantity?: number;
     maxQuantity?: number;
     exactQuantity?: number;
     quantityType?: "range" | "exact";
     quantityUnit?: string;
-    // New: a tier can include multiple deliverable lines
-    // (e.g. "10 photos" + "1 video" + "1 site map").
     deliverables?: Array<{
       name?: string;
       quantityType: "range" | "exact";
@@ -204,6 +215,8 @@ export const bookings = pgTable("bookings", {
   projectName: text("project_name"),
   selectedServices: json("selected_services").$type<number[]>().default([]),
   date: timestamp("date"),
+  creditAmount: integer("credit_amount").default(0),
+  creditSourceBookingId: integer("credit_source_booking_id"),
 });
 
 export const galleries = pgTable("galleries", {
@@ -300,6 +313,9 @@ export const businessConfig = pgTable("business_config", {
   autoInsurance: numeric("auto_insurance"),
   autoTransportation: numeric("auto_transportation"),
   autoTaxPercentage: numeric("auto_tax_percentage"),
+  // Admin-configurable discount percentages
+  bundleDiscountPercentage: numeric("bundle_discount_percentage").default("25"), // 3D Digital Twin combo + Foundation to Finish
+  partnerDiscountPercentage: numeric("partner_discount_percentage").default("10"), // Partner account checkout discount
   // Single global disclaimer shown on every shareable-link interstitial.
   // Not per-service and not per-customer — applies to all shareable links.
   shareableLinkDisclaimer: text("shareable_link_disclaimer"),

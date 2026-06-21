@@ -43,6 +43,7 @@ import { WebSocketServer } from "ws";
 import WebSocket from "ws";
 import { db } from "./db";
 import {
+  users,
   insertServiceSchema,
   insertServiceAddonSchema,
   insertBookingSchema,
@@ -4574,6 +4575,41 @@ ${dynamicEntries}</urlset>`;
     res.setHeader("Content-Type", "application/xml");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(xml);
+  });
+
+  // ── Partner account toggle ────────────────────────────────────────────────
+  app.patch("/api/admin/users/:userId/partner-account", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const { isPartnerAccount } = req.body;
+      if (typeof isPartnerAccount !== "boolean") {
+        return res.status(400).json({ message: "isPartnerAccount must be a boolean" });
+      }
+      const [updated] = await db
+        .update(users)
+        .set({ isPartnerAccount })
+        .where(eq(users.id, userId))
+        .returning({ id: users.id, isPartnerAccount: users.isPartnerAccount });
+      if (!updated) return res.status(404).json({ message: "User not found" });
+      res.json(updated);
+    } catch (err) {
+      console.error("Error updating partner account status:", err);
+      res.status(500).json({ message: "Failed to update partner account status" });
+    }
+  });
+
+  app.get("/api/admin/users/:userId/partner-account", isAdmin, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const [user] = await db
+        .select({ id: users.id, email: users.email, isPartnerAccount: users.isPartnerAccount })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (!user) return res.status(404).json({ message: "User not found" });
+      res.json(user);
+    } catch (err) {
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
   });
 
   return httpServer;

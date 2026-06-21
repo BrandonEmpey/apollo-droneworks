@@ -19,6 +19,9 @@ interface CustomCost {
 
 interface BusinessConfigData {
   id?: number;
+  // Admin-configurable discount settings
+  bundleDiscountPercentage: number; // 3D Digital Twin combo + Foundation to Finish
+  partnerDiscountPercentage: number; // Partner account checkout discount
   // Base business configuration (manual values)
   depreciableAssets: number;
   targetMissionsPerWeek: number;
@@ -67,6 +70,9 @@ interface BusinessConfigData {
 }
 
 const initialConfigData: BusinessConfigData = {
+  // Discount settings
+  bundleDiscountPercentage: 25,
+  partnerDiscountPercentage: 10,
   // Base business configuration
   depreciableAssets: 10000,
   targetMissionsPerWeek: 3,
@@ -139,6 +145,9 @@ export const BusinessConfigManager = () => {
   useEffect(() => {
     if (businessConfig) {
       setConfigData({
+        // Discount settings
+        bundleDiscountPercentage: Number((businessConfig as any).bundleDiscountPercentage) || initialConfigData.bundleDiscountPercentage,
+        partnerDiscountPercentage: Number((businessConfig as any).partnerDiscountPercentage) || initialConfigData.partnerDiscountPercentage,
         // Base configuration (manual values)
         id: businessConfig.id || undefined,
         depreciableAssets: Number(businessConfig.depreciableAssets) || initialConfigData.depreciableAssets,
@@ -557,6 +566,54 @@ export const BusinessConfigManager = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* ── Discount Settings ───────────────────────────────────────────────── */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Pricing Discounts</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              These percentages drive live price calculations — changes apply immediately to quotes and booking flows without a code deploy.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="bundleDiscountPercentage" className="text-sm font-medium">
+                Bundle Discount (%)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Applied when both Indoor + Outdoor are selected on 3D Digital Twin, and to all Foundation to Finish entry-point totals.
+              </p>
+              <Input
+                id="bundleDiscountPercentage"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={configData.bundleDiscountPercentage}
+                onChange={e => setConfigData(prev => ({ ...prev, bundleDiscountPercentage: Number(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="partnerDiscountPercentage" className="text-sm font-medium">
+                Partner Account Discount (%)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically applied at checkout for any customer flagged as a Partner Account (real estate agents, roofing companies, builders, etc.).
+              </p>
+              <Input
+                id="partnerDiscountPercentage"
+                type="number"
+                min={0}
+                max={100}
+                step={1}
+                value={configData.partnerDiscountPercentage}
+                onChange={e => setConfigData(prev => ({ ...prev, partnerDiscountPercentage: Number(e.target.value) }))}
+                className="w-full"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>

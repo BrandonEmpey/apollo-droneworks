@@ -2,7 +2,20 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Edit, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
+import { DigitalTwinTerm } from "@/components/digital-twin-term";
+
+function renderWithDigitalTwin(text: string) {
+  const TERM = "Digital Twin";
+  const parts = text.split(TERM);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {part}
+      {i < parts.length - 1 && (i === 0 ? <DigitalTwinTerm /> : TERM)}
+    </Fragment>
+  ));
+}
 
 interface Service {
   id: number;
@@ -215,7 +228,7 @@ export function EnhancedServiceCard({
     <Card className="h-full hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg">{service.name}</CardTitle>
+          <CardTitle className="text-lg">{renderWithDigitalTwin(service.name)}</CardTitle>
           {service.isAvailableAsAddon && (
             <Badge variant="secondary" className="bg-purple-100 text-purple-800">
               Addon Available

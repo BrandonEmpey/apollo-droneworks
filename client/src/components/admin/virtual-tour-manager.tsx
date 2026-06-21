@@ -288,7 +288,7 @@ export default function VirtualTourManager() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="construction">Construction</SelectItem>
-                      <SelectItem value="inspection">Aerial Survey</SelectItem>
+                      <SelectItem value="inspection">Aerial Mapping</SelectItem>
                       <SelectItem value="real_estate">Real Estate</SelectItem>
                     </SelectContent>
                   </Select>

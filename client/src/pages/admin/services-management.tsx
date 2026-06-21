@@ -59,7 +59,7 @@ const serviceFormSchema = z.object({
     description: z.string().default(""),
   })).default([]),
   classification: z.enum(["Revenue Generation", "Overhead Reduction", "N/A"]).default("N/A"),
-  pricingType: z.enum(["flat", "tiered", "per_unit", "range_based"]).default("flat"),
+  pricingType: z.enum(["flat", "tiered", "per_unit", "range_based", "composite"]).default("flat"),
   featuredBadge: z.boolean().default(false),
   hideFromServicesPage: z.boolean().default(false),
   isSubscription: z.boolean().default(false),
@@ -595,7 +595,7 @@ export default function ServicesManagement() {
       possibilities: service.possibilities || [],
       processSteps: service.processSteps || [],
       classification: (service.classification as "Revenue Generation" | "Overhead Reduction" | "N/A") || "N/A",
-      pricingType: service.pricingType as "flat" | "tiered" | "per_unit" | "range_based",
+      pricingType: service.pricingType as "flat" | "tiered" | "per_unit" | "range_based" | "composite",
       featuredBadge: service.featuredBadge || false,
       hideFromServicesPage: service.hideFromServicesPage || false,
       isSubscription: service.isSubscription || false,
@@ -1681,6 +1681,7 @@ function ServiceForm({
                         <SelectItem value="tiered">Tiered Pricing</SelectItem>
                         <SelectItem value="per_unit">Per Unit</SelectItem>
                         <SelectItem value="range_based">Range Based</SelectItem>
+                        <SelectItem value="composite">Composite (price pulled from other services)</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -1828,6 +1829,25 @@ function ServiceForm({
                 </FormItem>
               )}
             />
+          </div>
+        )}
+
+        {/* Composite pricing — price is pulled from component services, never set here */}
+        {form.watch("pricingType") === "composite" && (
+          <div className="space-y-2 p-4 border border-amber-600/50 rounded-lg bg-amber-950/20">
+            <h4 className="text-amber-400 font-medium">Composite Pricing (read-only)</h4>
+            {form.watch("name") === "Property Tours" ? (
+              <div className="text-sm text-gray-300 space-y-1">
+                <p>Price is computed automatically from component services:</p>
+                <ul className="list-disc pl-4 space-y-0.5 text-gray-400">
+                  <li><strong className="text-gray-200">Indoor:</strong> always pulls from <em>3D Digital Twin</em> — Indoor pricing</li>
+                  <li><strong className="text-gray-200">Outdoor:</strong> client chooses between <em>Real Estate Listings</em> cinematic tier or <em>3D Digital Twin</em> — Outdoor pricing</li>
+                </ul>
+                <p className="text-amber-300 text-xs mt-2">To change Property Tours pricing, edit Real Estate Listings or 3D Digital Twin instead.</p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400">This service's price is computed from other services. Edit the source services to change pricing.</p>
+            )}
           </div>
         )}
 
@@ -2467,6 +2487,95 @@ function ServiceForm({
                 </Button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Specialized editors for complex services ───────────────────────── */}
+
+        {/* Foundation to Finish — per-phase prices + computed entry-point totals */}
+        {form.watch("name") === "Foundation to Finish" && pricingType === "tiered" && (() => {
+          const tiers = form.watch("pricingTiers") ?? [];
+          const phaseMap: Record<string, { price: number; premiumPrice: number }> = {};
+          for (const t of tiers) {
+            const key = String((t as any).phase ?? t.name);
+            phaseMap[key] = { price: (t.price ?? 0) / 100, premiumPrice: ((t as any).premiumPrice ?? 0) / 100 };
+          }
+          const phases = [
+            { key: "1", label: "Phase 1 — Baseline Mapping" },
+            { key: "2b", label: "Phase 2B — Rough-In Digital Twin" },
+            { key: "3", label: "Phase 3 — Completion Marketing" },
+            { key: "4", label: "Phase 4 — Outdoor Digital Twin" },
+            { key: "5", label: "Phase 5 — Indoor Digital Twin" },
+            { key: "6", label: "Phase 6 — Final Assembly & Delivery" },
+          ];
+          const disc = 0.25; // read from config in production; hardcoded here for preview
+          const entryPoints = [
+            { label: "Bare ground / not yet started",                     phaseKeys: ["1","2b","3","4","5","6"] },
+            { label: "Foundation/framing underway, rough-in still ahead", phaseKeys: ["2b","3","4","5","6"] },
+            { label: "Rough-in already passed",                           phaseKeys: ["3","4","5","6"] },
+            { label: "Home finished, just want the twin",                 phaseKeys: ["4","5","6"] },
+          ];
+          return (
+            <div className="border border-blue-600/40 rounded-lg p-4 space-y-4 bg-blue-950/10">
+              <h4 className="text-blue-300 font-medium">Foundation to Finish — Per-Phase Prices</h4>
+              <p className="text-xs text-gray-400">Edit per-phase prices in the tier builder above. Entry-point totals below are computed automatically (sum of phases × {Math.round((1-disc)*100)}% after {Math.round(disc*100)}% bundle discount).</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-gray-300">
+                  <thead><tr className="text-xs text-gray-500 border-b border-gray-700">
+                    <th className="text-left py-1 pr-4">Phase</th>
+                    <th className="text-right py-1 pr-4">Standard</th>
+                    <th className="text-right py-1">Premium</th>
+                  </tr></thead>
+                  <tbody>
+                    {phases.map(p => (
+                      <tr key={p.key} className="border-b border-gray-800">
+                        <td className="py-1 pr-4 text-xs">{p.label}</td>
+                        <td className="text-right py-1 pr-4">${(phaseMap[p.key]?.price ?? 0).toFixed(0)}</td>
+                        <td className="text-right py-1 text-gray-400">${(phaseMap[p.key]?.premiumPrice ?? 0).toFixed(0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-2">Entry-point totals (read-only — computed from phases above):</p>
+                <div className="space-y-1">
+                  {entryPoints.map(ep => {
+                    const stdSum = ep.phaseKeys.reduce((s,k) => s + (phaseMap[k]?.price ?? 0), 0);
+                    const premSum = ep.phaseKeys.reduce((s,k) => s + (phaseMap[k]?.premiumPrice ?? 0), 0);
+                    return (
+                      <div key={ep.label} className="flex justify-between text-xs text-gray-400">
+                        <span>{ep.label}</span>
+                        <span>Std ${(stdSum*(1-disc)).toFixed(0)} / Prem ${(premSum*(1-disc)).toFixed(0)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 3D Digital Twin — Indoor/Outdoor scope note */}
+        {form.watch("name") === "3D Digital Twin" && pricingType === "tiered" && (
+          <div className="border border-purple-600/40 rounded-lg p-4 bg-purple-950/10 space-y-2">
+            <h4 className="text-purple-300 font-medium">3D Digital Twin — Indoor/Outdoor Scope</h4>
+            <p className="text-xs text-gray-400">
+              Use the tier builder above to set prices for each scope option (Indoor under 3k sq ft, Indoor 3k–6k sq ft, Outdoor Standard, Outdoor Premium).
+              The customer-facing selector shows Indoor and Outdoor checkboxes; selecting both applies the Bundle Discount configured in Business Costs.
+            </p>
+            <p className="text-xs text-gray-500">Tier <code className="bg-gray-800 px-1 rounded">scope</code> field controls which option each tier represents: <code className="bg-gray-800 px-1 rounded">indoor</code> / <code className="bg-gray-800 px-1 rounded">indoor_large</code> / <code className="bg-gray-800 px-1 rounded">outdoor_standard</code> / <code className="bg-gray-800 px-1 rounded">outdoor_premium</code>.</p>
+          </div>
+        )}
+
+        {/* Construction Monitoring / Timelapse — style/tier note */}
+        {form.watch("name") === "Construction Monitoring / Timelapse" && pricingType === "tiered" && (
+          <div className="border border-green-600/40 rounded-lg p-4 bg-green-950/10 space-y-2">
+            <h4 className="text-green-300 font-medium">Construction Monitoring / Timelapse — Style Selector</h4>
+            <p className="text-xs text-gray-400">
+              Four tiers: Progress Documentation (Standard/Premium) and Cinematic Timelapse (Standard/Premium). Each is a per-visit price.
+              The <code className="bg-gray-800 px-1 rounded">style</code> field on each tier (<code className="bg-gray-800 px-1 rounded">progress</code> or <code className="bg-gray-800 px-1 rounded">timelapse</code>) and <code className="bg-gray-800 px-1 rounded">minRecommendedVisits</code> drive the customer-facing UI hints.
+            </p>
           </div>
         )}
 
