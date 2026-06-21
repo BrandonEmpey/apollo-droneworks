@@ -2152,7 +2152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // TEMPORARY TEST MODE: Skip actual payment for testing
-      const testMode = true; // Set to true to enable test mode, false for real payments
+      const testMode = false; // Set to true to enable test mode, false for real payments
       
       if (testMode && bookingId) {
         console.log("TEST MODE ACTIVATED: Processing booking without actual payment");
