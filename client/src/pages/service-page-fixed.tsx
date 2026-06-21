@@ -215,6 +215,33 @@ export default function ServicePage() {
   // Construction Monitoring: style + tier (default to 'progress' so price is visible on load)
   const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse'>('progress');
   const [cmTier, setCmTier] = useState<'standard' | 'premium'>('standard');
+
+  // Property Tours composite price — computed from current selector state (in cents).
+  // Defaults resolve to the floor config (~$625): under-3k indoor + Stills Only cinematic.
+  // Used for both the "Starting Price" display on the PT page and bundle card prices
+  // on other service pages where PT appears as a recommendation.
+  const ptLiveTotal = useMemo((): number => {
+    if (!services) return 0;
+    const dtSvc = services.find(s => s.slug === '3d-digital-twin');
+    const relSvc = services.find(s => s.slug === 'real-estate-listings');
+    if (!dtSvc || !relSvc) return 0;
+    const dtTiers: any[] = (dtSvc.pricingTiers as any[]) ?? [];
+    const relRanges: any[] = (relSvc.priceRanges as any[]) ?? [];
+    const indoorT = ptIndoorSize === 'under3k'
+      ? dtTiers.find((t: any) => t.scope === 'indoor')
+      : dtTiers.find((t: any) => t.scope === 'indoor_large');
+    const indoorMid = indoorT ? (indoorT.minPrice + indoorT.maxPrice) / 2 : 0;
+    let outdoorMid = 0;
+    if (ptOutdoorType === 'cinematic' && relRanges[ptCinematicTier]) {
+      outdoorMid = relRanges[ptCinematicTier].minPrice;
+    } else if (ptOutdoorType === '3dtwin') {
+      const outdoorT = ptOutdoorScope === 'standard'
+        ? dtTiers.find((t: any) => t.scope === 'outdoor_standard')
+        : dtTiers.find((t: any) => t.scope === 'outdoor_premium');
+      if (outdoorT) outdoorMid = (outdoorT.minPrice + outdoorT.maxPrice) / 2;
+    }
+    return Math.round(indoorMid + outdoorMid);
+  }, [services, ptIndoorSize, ptOutdoorType, ptCinematicTier, ptOutdoorScope]);
   
   // Refs for pricing tiers and bundle areas to handle click outside
   const pricingTiersRef = useRef<HTMLDivElement>(null);
@@ -783,11 +810,21 @@ export default function ServicePage() {
                                       {recommendedService.tooltipDescription || recommendedService.description}
                                     </div>
                                   )}
-                                  <div className={`mt-3 ${isAlreadySelected ? 'text-black' : 'text-gold'}`}>
-                                    <span className="font-semibold">{formatPrice((recommendedService.price / 100) - savings)}</span>
-                                    <span className="text-xs line-through opacity-60 ml-2">{formatPrice(recommendedService.price / 100)}</span>
-                                    <div className="text-xs text-green-400 mt-1">Save {formatPrice(savings)}</div>
-                                  </div>
+                                  {(() => {
+                                    const effectivePriceCents = recommendedService.pricingType === "composite"
+                                      ? ptLiveTotal
+                                      : recommendedService.price;
+                                    const effectiveSavings = recommendedService.pricingType === "composite"
+                                      ? Math.round(effectivePriceCents * 0.10 / 100) // 10% of dollar price
+                                      : savings;
+                                    return (
+                                      <div className={`mt-3 ${isAlreadySelected ? 'text-black' : 'text-gold'}`}>
+                                        <span className="font-semibold">{formatPrice((effectivePriceCents / 100) - effectiveSavings)}</span>
+                                        <span className="text-xs line-through opacity-60 ml-2">{formatPrice(effectivePriceCents / 100)}</span>
+                                        <div className="text-xs text-green-400 mt-1">Save {formatPrice(effectiveSavings)}</div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>
@@ -1280,10 +1317,14 @@ export default function ServicePage() {
                 ) : (
                   <div className="flex justify-between items-center border-b border-offwhite/10 pb-2">
                     <span className="text-offwhite/70">
-                      {service.isSubscription ? "One-time Price" : "Starting Price"}
+                      {service.pricingType === "composite"
+                        ? "Estimated Total"
+                        : service.isSubscription ? "One-time Price" : "Starting Price"}
                     </span>
                     <span className="text-gold-gradient font-montserrat font-semibold text-xl">
-                      {formatPrice(service.price / 100)}
+                      {service.pricingType === "composite"
+                        ? `~${formatPrice(ptLiveTotal / 100)}`
+                        : formatPrice(service.price / 100)}
                     </span>
                   </div>
                 )}
