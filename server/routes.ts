@@ -2421,6 +2421,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public: social profile URLs for footer — read-only, no auth required
+  app.get("/api/public/social-links", async (_req, res) => {
+    try {
+      const config = await storage.getBusinessConfig();
+      res.json({
+        facebookUrl: config?.facebookUrl ?? null,
+        instagramUrl: config?.instagramUrl ?? null,
+        twitterUrl: config?.twitterUrl ?? null,
+        youtubeUrl: config?.youtubeUrl ?? null,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Public: exposes only the bundle discount % so the public service page can display it
   app.get("/api/public/bundle-discount", async (_req, res) => {
     try {

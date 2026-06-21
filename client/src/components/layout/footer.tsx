@@ -18,6 +18,10 @@ export default function Footer() {
     queryKey: ["/api/services"],
     staleTime: Infinity,
   });
+  const { data: socialLinks } = useQuery<{ facebookUrl: string | null; instagramUrl: string | null; twitterUrl: string | null; youtubeUrl: string | null }>({
+    queryKey: ["/api/public/social-links"],
+    staleTime: 5 * 60 * 1000,
+  });
   const serviceLinks = FOOTER_SERVICE_NAMES.map(name => {
     const svc = services?.find(s => s.name === name);
     return { name, id: svc?.id ?? null };
@@ -43,42 +47,26 @@ export default function Footer() {
               Providing professional drone services for real estate, events, and commercial applications.
             </p>
             <div className="flex space-x-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gold hover:text-gold-light transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook size={20} />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gold hover:text-gold-light transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter size={20} />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gold hover:text-gold-light transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram size={20} />
-              </a>
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gold hover:text-gold-light transition-colors"
-                aria-label="YouTube"
-              >
-                <Youtube size={20} />
-              </a>
+              {socialLinks?.facebookUrl && (
+                <a href={socialLinks.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors" aria-label="Facebook">
+                  <Facebook size={20} />
+                </a>
+              )}
+              {socialLinks?.twitterUrl && (
+                <a href={socialLinks.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors" aria-label="X / Twitter">
+                  <Twitter size={20} />
+                </a>
+              )}
+              {socialLinks?.instagramUrl && (
+                <a href={socialLinks.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors" aria-label="Instagram">
+                  <Instagram size={20} />
+                </a>
+              )}
+              {socialLinks?.youtubeUrl && (
+                <a href={socialLinks.youtubeUrl} target="_blank" rel="noopener noreferrer" className="text-gold hover:text-gold-light transition-colors" aria-label="YouTube">
+                  <Youtube size={20} />
+                </a>
+              )}
             </div>
           </div>
 

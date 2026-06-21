@@ -28,6 +28,7 @@ export default function CustomerDetail() {
   const [editedBookingStatus, setEditedBookingStatus] = useState("");
   const [editedProjectStatus, setEditedProjectStatus] = useState("");
   const [editedTaskStatus, setEditedTaskStatus] = useState("");
+  const [creditAmountDollars, setCreditAmountDollars] = useState("");
 
   const { data: customerData, isLoading } = useQuery<any>({
     queryKey: [`/api/crm/customers/${id}/all`],
@@ -123,9 +124,20 @@ export default function CustomerDetail() {
     }
   });
 
+  const updateCreditMutation = useMutation({
+    mutationFn: async ({ bookingId, creditAmount }: { bookingId: number; creditAmount: number }) =>
+      apiRequest("PUT", `/api/bookings/${bookingId}`, { creditAmount }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
+      toast({ title: "Credit applied", description: "Rough-In upgrade credit saved." });
+    },
+    onError: () => toast({ title: "Error", description: "Failed to save credit.", variant: "destructive" }),
+  });
+
   const openBookingSheet = (booking: any) => {
     setSelectedBooking(booking);
     setEditedBookingStatus(booking.status || "pending");
+    setCreditAmountDollars(booking.creditAmount ? String(booking.creditAmount / 100) : "");
   };
 
   const openProjectSheet = (project: any) => {
@@ -525,6 +537,42 @@ export default function CustomerDetail() {
                 <p className="text-sm font-medium text-primary">
                   ${Number(selectedBooking.totalAmount || 0).toLocaleString()}
                 </p>
+              </div>
+              <div className="space-y-2 border rounded-md p-3 bg-muted/30">
+                <Label className="text-sm font-semibold">Rough-In Upgrade Credit</Label>
+                <p className="text-xs text-muted-foreground">
+                  Apply a credit from a prior Rough-In Digital Twin booking. This reduces the amount shown at checkout.
+                </p>
+                <div className="flex gap-2 items-center">
+                  <span className="text-sm text-muted-foreground">$</span>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={1}
+                    placeholder="0"
+                    value={creditAmountDollars}
+                    onChange={e => setCreditAmountDollars(e.target.value)}
+                    className="w-32"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={updateCreditMutation.isPending}
+                    onClick={() =>
+                      updateCreditMutation.mutate({
+                        bookingId: selectedBooking.id,
+                        creditAmount: Math.round(parseFloat(creditAmountDollars || "0") * 100),
+                      })
+                    }
+                  >
+                    {updateCreditMutation.isPending ? "Saving…" : "Apply"}
+                  </Button>
+                </div>
+                {selectedBooking.creditAmount > 0 && (
+                  <p className="text-xs text-emerald-600">
+                    Current credit: ${(selectedBooking.creditAmount / 100).toLocaleString()}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>

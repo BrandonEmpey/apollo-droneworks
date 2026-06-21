@@ -35,6 +35,7 @@ import { startBlogCron } from "./cron/blog-cron";
 import { backfillBookingIncome, seedDemoExpenses } from "./booking-finance-sync";
 import { addPricingSettings } from "./migrations/add-pricing-settings";
 import { fixServiceAddonsFk } from "./migrations/fix-service-addons-fk";
+import { addSocialLinks } from "./migrations/add-social-links";
 
 const app = express();
 app.use(express.json({ limit: '100mb' }));
@@ -94,6 +95,11 @@ app.use((req, res, next) => {
     await fixServiceAddonsFk();
   } catch (err) {
     console.error("Error in fix-service-addons-fk migration:", err);
+  }
+  try {
+    await addSocialLinks();
+  } catch (err) {
+    console.error("Error in add-social-links migration:", err);
   }
 
   // Initialize the database

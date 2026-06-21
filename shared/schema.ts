@@ -319,6 +319,11 @@ export const businessConfig = pgTable("business_config", {
   // Single global disclaimer shown on every shareable-link interstitial.
   // Not per-service and not per-customer — applies to all shareable links.
   shareableLinkDisclaimer: text("shareable_link_disclaimer"),
+  // Social profile URLs — displayed in the public footer
+  facebookUrl: text("facebook_url"),
+  instagramUrl: text("instagram_url"),
+  twitterUrl: text("twitter_url"),
+  youtubeUrl: text("youtube_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

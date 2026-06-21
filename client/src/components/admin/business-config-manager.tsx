@@ -22,6 +22,11 @@ interface BusinessConfigData {
   // Admin-configurable discount settings
   bundleDiscountPercentage: number; // 3D Digital Twin combo + Foundation to Finish
   partnerDiscountPercentage: number; // Partner account checkout discount
+  // Social profile URLs
+  facebookUrl?: string;
+  instagramUrl?: string;
+  twitterUrl?: string;
+  youtubeUrl?: string;
   // Base business configuration (manual values)
   depreciableAssets: number;
   targetMissionsPerWeek: number;
@@ -73,6 +78,11 @@ const initialConfigData: BusinessConfigData = {
   // Discount settings
   bundleDiscountPercentage: 25,
   partnerDiscountPercentage: 10,
+  // Social links
+  facebookUrl: "",
+  instagramUrl: "",
+  twitterUrl: "",
+  youtubeUrl: "",
   // Base business configuration
   depreciableAssets: 10000,
   targetMissionsPerWeek: 3,
@@ -148,6 +158,11 @@ export const BusinessConfigManager = () => {
         // Discount settings
         bundleDiscountPercentage: Number((businessConfig as any).bundleDiscountPercentage) || initialConfigData.bundleDiscountPercentage,
         partnerDiscountPercentage: Number((businessConfig as any).partnerDiscountPercentage) || initialConfigData.partnerDiscountPercentage,
+        // Social links
+        facebookUrl: (businessConfig as any).facebookUrl ?? "",
+        instagramUrl: (businessConfig as any).instagramUrl ?? "",
+        twitterUrl: (businessConfig as any).twitterUrl ?? "",
+        youtubeUrl: (businessConfig as any).youtubeUrl ?? "",
         // Base configuration (manual values)
         id: businessConfig.id || undefined,
         depreciableAssets: Number(businessConfig.depreciableAssets) || initialConfigData.depreciableAssets,
@@ -611,6 +626,36 @@ export const BusinessConfigManager = () => {
                 className="w-full"
               />
             </div>
+          </div>
+        </div>
+
+        {/* ── Social Profile URLs ──────────────────────────────────────────────── */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold">Social Profile URLs</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              These appear as icons in the public footer. Leave blank to hide the icon.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {[
+              { key: "facebookUrl",  label: "Facebook URL" },
+              { key: "instagramUrl", label: "Instagram URL" },
+              { key: "twitterUrl",   label: "X / Twitter URL" },
+              { key: "youtubeUrl",   label: "YouTube URL" },
+            ].map(({ key, label }) => (
+              <div key={key} className="space-y-1.5">
+                <Label htmlFor={key} className="text-sm font-medium">{label}</Label>
+                <Input
+                  id={key}
+                  type="url"
+                  placeholder="https://"
+                  value={(configData as any)[key] ?? ""}
+                  onChange={e => setConfigData(prev => ({ ...prev, [key]: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+            ))}
           </div>
         </div>
 
