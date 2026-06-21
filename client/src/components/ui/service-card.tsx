@@ -7,9 +7,11 @@ import droneIcon from "@assets/Icon_25_px_1767371102776.png";
 
 interface ServiceCardProps {
   service: Service;
+  /** Pre-computed floor price in cents for composite-priced services (e.g. Property Tours). */
+  compositePriceCents?: number;
 }
 
-export function ServiceCard({ service }: ServiceCardProps) {
+export function ServiceCard({ service, compositePriceCents }: ServiceCardProps) {
   // Format price helper - input must be in dollars (prices from DB are in cents, divide by 100 first)
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -21,6 +23,13 @@ export function ServiceCard({ service }: ServiceCardProps) {
   };
 
   const getPricingDisplay = () => {
+    // Composite pricing (e.g. Property Tours): use caller-supplied floor price
+    if (service.pricingType === "composite") {
+      return compositePriceCents
+        ? `From ${formatPrice(compositePriceCents / 100)}`
+        : "See options";
+    }
+
     switch (service.pricingType) {
       case "tiered":
         if (service.pricingTiers && service.pricingTiers.length > 0) {
@@ -31,10 +40,10 @@ export function ServiceCard({ service }: ServiceCardProps) {
           return `From ${formatPrice((firstTier.price || 0) / 100)}`;
         }
         break;
-      
+
       case "per_unit":
         return `${formatPrice(service.price / 100)} per ${service.unitType || 'unit'}`;
-      
+
       case "range_based":
         if (service.priceRanges && service.priceRanges.length > 0) {
           const firstRange = service.priceRanges[0];
@@ -46,12 +55,12 @@ export function ServiceCard({ service }: ServiceCardProps) {
           return `From ${formatPrice(firstRange.minPrice / 100)}`;
         }
         break;
-      
+
       case "flat":
       default:
         return `From ${formatPrice(service.price / 100)}`;
     }
-    
+
     // Fallback to base price if no specific pricing is configured
     return `From ${formatPrice(service.price / 100)}`;
   };

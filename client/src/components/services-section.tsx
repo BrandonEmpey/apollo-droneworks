@@ -58,6 +58,20 @@ export function ServicesSection() {
 
   const categories = CATEGORY_ORDER.filter(cat => (grouped[cat]?.length ?? 0) > 0);
 
+  // Compute floor price for composite services (Property Tours).
+  // Floor = cheapest 3D Digital Twin indoor tier midpoint + cheapest Real Estate Listings tier price.
+  const dtSvc = services.find(s => s.slug === '3d-digital-twin');
+  const relSvc = services.find(s => s.slug === 'real-estate-listings');
+  const ptFloorCents = (() => {
+    if (!dtSvc || !relSvc) return 0;
+    const dtTiers: any[] = (dtSvc.pricingTiers as any[]) ?? [];
+    const relRanges: any[] = (relSvc.priceRanges as any[]) ?? [];
+    const indoorT = dtTiers.find((t: any) => t.scope === 'indoor');
+    const cheapestRel = relRanges[0];
+    if (!indoorT || !cheapestRel) return 0;
+    return Math.round((indoorT.minPrice + indoorT.maxPrice) / 2) + cheapestRel.minPrice;
+  })();
+
   return (
     <section id="services" className="py-20 bg-[#132641]/25">
       <div className="container mx-auto px-4 space-y-16">
@@ -69,7 +83,11 @@ export function ServicesSection() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {grouped[cat].map(service => (
-                <ServiceCard key={service.id} service={service} />
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  compositePriceCents={service.pricingType === 'composite' ? ptFloorCents : undefined}
+                />
               ))}
             </div>
           </div>
