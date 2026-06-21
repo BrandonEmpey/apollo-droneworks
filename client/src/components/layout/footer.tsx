@@ -2,9 +2,26 @@ import { Link } from "wouter";
 import { Mail, Phone, MapPin, Clock, Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 import logoImage from '@assets/Color_logo_-_no_background_1767370534671.png';
 import { TrustBar } from "@/components/trust-bar";
+import { useQuery } from "@tanstack/react-query";
+
+const FOOTER_SERVICE_NAMES = [
+  "Real Estate Listings",
+  "Roof Inspections",
+  "Aerial Mapping",
+  "3D Digital Twin",
+  "Foundation to Finish",
+];
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
+  const { data: services } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ["/api/services"],
+    staleTime: Infinity,
+  });
+  const serviceLinks = FOOTER_SERVICE_NAMES.map(name => {
+    const svc = services?.find(s => s.name === name);
+    return { name, id: svc?.id ?? null };
+  });
 
   return (
     <footer className="bg-[#080d17] pb-6">
@@ -111,41 +128,23 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-semibold mb-6 text-gold-gradient">Our Services</h3>
             <ul className="space-y-3">
-              <li>
-                <Link href="/services/55">
-                  <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
-                    Real Estate Listings
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services/60">
-                  <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
-                    Roof Inspections
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services/61">
-                  <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
-                    Tower Inspections
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services/67">
-                  <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
-                    3D Mapping
-                  </span>
-                </Link>
-              </li>
-              <li>
-                <Link href="/services/52">
-                  <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
-                    Construction Monitoring
-                  </span>
-                </Link>
-              </li>
+              {serviceLinks.map(({ name, id }) => (
+                <li key={name}>
+                  {id ? (
+                    <Link href={`/services/${id}`}>
+                      <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
+                        {name}
+                      </span>
+                    </Link>
+                  ) : (
+                    <Link href="/services">
+                      <span className="text-gray-400 hover:text-gold-gradient transition-colors cursor-pointer">
+                        {name}
+                      </span>
+                    </Link>
+                  )}
+                </li>
+              ))}
             </ul>
           </div>
 

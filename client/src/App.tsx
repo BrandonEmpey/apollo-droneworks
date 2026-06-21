@@ -56,6 +56,9 @@ import QuoteBuilder from "@/pages/quote-builder";
 import IndustryPage from "@/pages/industry-page";
 import ExternalLinkPage from "@/pages/external-link";
 import CityServicesPage from "@/pages/city-services-page";
+import PrivacyPage from "@/pages/privacy-page";
+import TermsPage from "@/pages/terms-page";
+import FaqPage from "@/pages/faq-page";
 
 function ScrollToTop() {
   const [location] = useLocation();
@@ -120,6 +123,9 @@ function Router() {
       <ProtectedRoute path="/admin/bookings/:id" component={ClientOperations} adminOnly={true} />
       <ProtectedRoute path="/admin/theme" component={AdminThemeEditor} adminOnly={true} />
       <Route path="/quote" component={QuoteBuilder} />
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
+      <Route path="/faq" component={FaqPage} />
 
       <ProtectedRoute path="/social-media" component={SocialMediaPage} adminOnly={true} />
       <ProtectedRoute path="/social-media-ads" component={SocialMediaAdPage} adminOnly={true} />
