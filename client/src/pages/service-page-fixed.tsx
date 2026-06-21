@@ -203,11 +203,17 @@ export default function ServicePage() {
   const [dtIndoor, setDtIndoor] = useState<'under3k' | 'over3k' | null>(null);
   const [dtOutdoor, setDtOutdoor] = useState<'standard' | 'premium' | null>(null);
 
+  // Property Tours: indoor size + outdoor type selectors
+  const [ptIndoorSize, setPtIndoorSize] = useState<'under3k' | 'over3k'>('under3k');
+  const [ptOutdoorType, setPtOutdoorType] = useState<'cinematic' | '3dtwin' | null>(null);
+  const [ptCinematicTier, setPtCinematicTier] = useState<number>(0);
+  const [ptOutdoorScope, setPtOutdoorScope] = useState<'standard' | 'premium'>('standard');
+
   // Foundation to Finish: start-phase state
   const [f2fStartPhase, setF2fStartPhase] = useState<number | null>(null); // 1=phase1, 2=phase2b, 3=phase3, 4=phase4
 
-  // Construction Monitoring: style + tier
-  const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse' | null>(null);
+  // Construction Monitoring: style + tier (default to 'progress' so price is visible on load)
+  const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse'>('progress');
   const [cmTier, setCmTier] = useState<'standard' | 'premium'>('standard');
   
   // Refs for pricing tiers and bundle areas to handle click outside
@@ -920,10 +926,10 @@ export default function ServicePage() {
                   const tiers: any[] = service.pricingTiers ?? [];
                   const DISC = BUNDLE_DISC;
                   const entryPoints = [
-                    { phase: 1,  label: "From the beginning", desc: "Phase 1 through completion", phases: [1, '2b', 3, 4, 5, 6] },
-                    { phase: '2b', label: "Pre-drywall stage",  desc: "Phase 2B through completion", phases: ['2b', 3, 4, 5, 6] },
-                    { phase: 3,  label: "Near completion",    desc: "Phase 3 through completion",  phases: [3, 4, 5, 6] },
-                    { phase: 4,  label: "Already done",       desc: "Digital Twin of finished property", phases: [4, 5, 6] },
+                    { phase: 1,    label: "Bare ground / not yet started",                  desc: "All phases from the very beginning", phases: [1, '2b', 3, 4, 5, 6] },
+                    { phase: '2b', label: "Foundation/framing underway, rough-in still ahead", desc: "Starting at the rough-in capture",   phases: ['2b', 3, 4, 5, 6] },
+                    { phase: 3,    label: "Rough-in already passed, nothing captured yet",   desc: "Completion marketing onward",          phases: [3, 4, 5, 6] },
+                    { phase: 4,    label: "Home finished, just want the twin",               desc: "Digital Twin of the completed property", phases: [4, 5, 6] },
                   ];
                   const sumPhases = (phases: (number | string)[]) => {
                     return phases.reduce((sum, p) => {
@@ -964,7 +970,7 @@ export default function ServicePage() {
                 {/* ── Construction Monitoring / Timelapse: style + tier ─────── */}
                 {service.name === "Construction Monitoring / Timelapse" && (() => {
                   const tiers: any[] = service.pricingTiers ?? [];
-                  const selected = tiers.find((t: any) => t.style === (cmStyle ?? 'progress') && t.tier === cmTier);
+                  const selected = tiers.find((t: any) => t.style === cmStyle && t.tier === cmTier);
                   return (
                     <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-3">
                       <div>
@@ -991,7 +997,7 @@ export default function ServicePage() {
                           ))}
                         </div>
                       </div>
-                      {cmStyle && selected && (
+                      {selected && (
                         <div className="pt-2 border-t border-gold/20">
                           <p className="text-gold font-semibold text-sm">${Math.round(selected.price/100).toLocaleString()} per visit</p>
                           {selected.minRecommendedVisits && (
@@ -1003,14 +1009,135 @@ export default function ServicePage() {
                   );
                 })()}
 
-                {/* ── Property Tours: composite price display ───────────────── */}
-                {service.pricingType === "composite" && (
-                  <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 text-sm text-offwhite/80">
-                    <p className="font-semibold text-gold mb-1">How pricing works</p>
-                    <p>Property Tours combines an Indoor <DigitalTwinTerm /> (indoor walkthrough) with your choice of Aerial Cinematic Video or an Outdoor <DigitalTwinTerm />. The total is the sum of the component services you choose — no separate Property Tours price.</p>
-                    <p className="mt-2 text-offwhite/60 text-xs">Book the component services individually: start with Real Estate Listings for the aerial video, then add a 3D Digital Twin for the indoor or outdoor twin.</p>
-                  </div>
-                )}
+                {/* ── Property Tours: live composite price selector ──────────── */}
+                {service.pricingType === "composite" && (() => {
+                  const dtService = services?.find(s => s.name === "3D Digital Twin");
+                  const relService = services?.find(s => s.name === "Real Estate Listings");
+                  const dtTiers: any[] = dtService?.pricingTiers ?? [];
+                  const relRanges: any[] = relService?.priceRanges ?? [];
+
+                  const indoorUnder = dtTiers.find((t: any) => t.scope === "indoor");
+                  const indoorOver  = dtTiers.find((t: any) => t.scope === "indoor_large");
+                  const outdoorStd  = dtTiers.find((t: any) => t.scope === "outdoor_standard");
+                  const outdoorPrem = dtTiers.find((t: any) => t.scope === "outdoor_premium");
+
+                  const indoorTier  = ptIndoorSize === 'under3k' ? indoorUnder : indoorOver;
+                  const indoorMid   = indoorTier ? (indoorTier.minPrice + indoorTier.maxPrice) / 2 : 0;
+
+                  let outdoorMid = 0;
+                  let outdoorLabel = '';
+                  if (ptOutdoorType === 'cinematic' && relRanges[ptCinematicTier]) {
+                    const r = relRanges[ptCinematicTier];
+                    outdoorMid = r.minPrice;
+                    outdoorLabel = `${r.label} — $${Math.round(r.minPrice/100).toLocaleString()}`;
+                  } else if (ptOutdoorType === '3dtwin') {
+                    const t = ptOutdoorScope === 'standard' ? outdoorStd : outdoorPrem;
+                    if (t) {
+                      outdoorMid = (t.minPrice + t.maxPrice) / 2;
+                      outdoorLabel = `${ptOutdoorScope === 'standard' ? 'Standard' : 'Premium'} — ~$${Math.round(outdoorMid/100).toLocaleString()}`;
+                    }
+                  }
+
+                  const totalMid = ptOutdoorType ? Math.round((indoorMid + outdoorMid) / 100) : null;
+
+                  return (
+                    <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-4">
+                      <p className="text-sm text-offwhite/80">Build your tour — indoor walkthrough is always included. Choose your outdoor experience below.</p>
+
+                      {/* Indoor size */}
+                      <div>
+                        <p className="text-xs font-semibold text-gold mb-2">Indoor <DigitalTwinTerm /> — navigable 3D walkthrough</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([
+                            { val: 'under3k' as const, label: 'Under 3,000 sq ft', tier: indoorUnder },
+                            { val: 'over3k'  as const, label: '3,000–6,000 sq ft',  tier: indoorOver  },
+                          ]).map(opt => (
+                            <button key={opt.val} onClick={() => setPtIndoorSize(opt.val)}
+                              className={`text-left p-3 rounded-md border transition-all text-xs ${ptIndoorSize === opt.val ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                              <span className="block font-medium">{opt.label}</span>
+                              {opt.tier && <span className="text-gold/80">${Math.round(opt.tier.minPrice/100).toLocaleString()}–${Math.round(opt.tier.maxPrice/100).toLocaleString()}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Outdoor type toggle */}
+                      <div>
+                        <p className="text-xs font-semibold text-gold mb-2">Outdoor — choose your experience</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={() => setPtOutdoorType(ptOutdoorType === 'cinematic' ? null : 'cinematic')}
+                            className={`text-left p-3 rounded-md border transition-all text-xs ${ptOutdoorType === 'cinematic' ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                            <span className="block font-medium">Cinematic Aerial Video</span>
+                            <span className="text-offwhite/50">Stunning aerial footage for MLS &amp; marketing</span>
+                          </button>
+                          <button onClick={() => setPtOutdoorType(ptOutdoorType === '3dtwin' ? null : '3dtwin')}
+                            className={`text-left p-3 rounded-md border transition-all text-xs ${ptOutdoorType === '3dtwin' ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                            <span className="block font-medium">3D Exterior <DigitalTwinTerm /></span>
+                            <span className="text-offwhite/50">Fully navigable 3D model of the exterior</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Cinematic tier picker */}
+                      {ptOutdoorType === 'cinematic' && relRanges.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-gold mb-2">Aerial video package</p>
+                          <div className="space-y-1">
+                            {relRanges.map((r: any, i: number) => (
+                              <button key={i} onClick={() => setPtCinematicTier(i)}
+                                className={`w-full text-left px-3 py-2 rounded-md border text-xs flex justify-between transition-all ${ptCinematicTier === i ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                                <span>{r.label}</span>
+                                <span className="font-semibold">${Math.round(r.minPrice/100).toLocaleString()}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3D Twin outdoor scope picker */}
+                      {ptOutdoorType === '3dtwin' && (
+                        <div>
+                          <p className="text-xs font-semibold text-gold mb-2">Exterior twin scope</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            {([
+                              { val: 'standard' as const, label: 'Standard', tier: outdoorStd },
+                              { val: 'premium'  as const, label: 'Premium',  tier: outdoorPrem },
+                            ]).map(opt => (
+                              <button key={opt.val} onClick={() => setPtOutdoorScope(opt.val)}
+                                className={`text-left p-3 rounded-md border transition-all text-xs ${ptOutdoorScope === opt.val ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
+                                <span className="block font-medium">{opt.label}</span>
+                                {opt.tier && <span className="text-gold/80">${Math.round(opt.tier.minPrice/100).toLocaleString()}–${Math.round(opt.tier.maxPrice/100).toLocaleString()}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Live total */}
+                      <div className={`pt-3 border-t border-gold/20 ${!ptOutdoorType ? 'opacity-50' : ''}`}>
+                        {ptOutdoorType && totalMid ? (
+                          <>
+                            <div className="flex justify-between text-xs text-offwhite/60 mb-1">
+                              <span>Indoor {ptIndoorSize === 'under3k' ? '(under 3k sq ft)' : '(3k–6k sq ft)'}</span>
+                              <span>~${Math.round(indoorMid/100).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-xs text-offwhite/60 mb-2">
+                              <span>Outdoor: {outdoorLabel}</span>
+                              <span>~${Math.round(outdoorMid/100).toLocaleString()}</span>
+                            </div>
+                            <div className="flex justify-between text-sm font-bold text-gold">
+                              <span>Estimated total</span>
+                              <span>~${totalMid.toLocaleString()}</span>
+                            </div>
+                            <p className="text-xs text-offwhite/40 mt-1">Midpoint estimate — final quote confirmed after booking</p>
+                          </>
+                        ) : (
+                          <p className="text-xs text-offwhite/50">Select an outdoor option above to see your estimated total.</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Pricing Tiers as Cards */}
                 {service.pricingType !== "composite" && service.pricingTiers && service.pricingTiers.length > 0 ? (
@@ -1626,7 +1753,7 @@ export default function ServicePage() {
                 </div>
               )}
 
-              <Button 
+              <Button
                 className="w-full bg-gold hover:bg-gold/90 text-black font-medium mt-6"
                 onClick={() => {
                   if (!user) {
@@ -1638,20 +1765,34 @@ export default function ServicePage() {
                     return;
                   }
 
-                  // Collect booking details
-                  const bookingDetails = {
-                    serviceId: service?.id,
-                    serviceName: service?.name,
-                    selectedTier: selectedPricingTier !== null && service?.pricingTiers ? service.pricingTiers[selectedPricingTier] : null,
-                    selectedSubscription: selectedSubscription,
-                    flightQuantity: flightQuantity,
-                    selectedBundles: selectedBundles,
-                    selectedAddOns: selectedAddOns,
-                    totalPrice: totalPrice,
-                  };
+                  // Property Tours composite: compute total from selected indoor+outdoor and navigate
+                  if (service?.pricingType === "composite") {
+                    if (!ptOutdoorType) {
+                      toast({ title: "Select an outdoor option", description: "Choose Cinematic Aerial Video or 3D Exterior Digital Twin to continue.", variant: "destructive" });
+                      return;
+                    }
+                    const dtSvc = services?.find(s => s.name === "3D Digital Twin");
+                    const relSvc = services?.find(s => s.name === "Real Estate Listings");
+                    const dtTiers: any[] = dtSvc?.pricingTiers ?? [];
+                    const relRanges: any[] = relSvc?.priceRanges ?? [];
+                    const indoorT = ptIndoorSize === 'under3k' ? dtTiers.find((t: any) => t.scope === "indoor") : dtTiers.find((t: any) => t.scope === "indoor_large");
+                    const indoorMid = indoorT ? (indoorT.minPrice + indoorT.maxPrice) / 2 : 0;
+                    let outdoorMid = 0;
+                    if (ptOutdoorType === 'cinematic' && relRanges[ptCinematicTier]) {
+                      outdoorMid = relRanges[ptCinematicTier].minPrice;
+                    } else if (ptOutdoorType === '3dtwin') {
+                      const t = ptOutdoorScope === 'standard' ? dtTiers.find((t: any) => t.scope === "outdoor_standard") : dtTiers.find((t: any) => t.scope === "outdoor_premium");
+                      if (t) outdoorMid = (t.minPrice + t.maxPrice) / 2;
+                    }
+                    const ptTotal = Math.round((indoorMid + outdoorMid) / 100);
+                    const ptNote = `Indoor Digital Twin (${ptIndoorSize === 'under3k' ? '<3k sq ft' : '3k-6k sq ft'}) + ${ptOutdoorType === 'cinematic' ? (relRanges[ptCinematicTier]?.label ?? 'Cinematic Video') : `3D Exterior Twin (${ptOutdoorScope})`}`;
+                    toast({ title: "Booking Property Tour", description: `Total: ~$${ptTotal.toLocaleString()} — redirecting to booking form.` });
+                    setTimeout(() => {
+                      window.location.href = `/booking?service=${service.id}&totalPrice=${ptTotal}&notes=${encodeURIComponent(ptNote)}`;
+                    }, 1000);
+                    return;
+                  }
 
-                  console.log('Booking details:', bookingDetails);
-                  
                   toast({
                     title: "Booking Initiated",
                     description: `Starting booking process for ${service?.name}. You will be redirected to the booking form.`,

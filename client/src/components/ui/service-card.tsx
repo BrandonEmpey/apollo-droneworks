@@ -38,8 +38,10 @@ export function ServiceCard({ service }: ServiceCardProps) {
       case "range_based":
         if (service.priceRanges && service.priceRanges.length > 0) {
           const firstRange = service.priceRanges[0];
-          if (firstRange.maxPrice) {
-            return `${formatPrice(firstRange.minPrice / 100)} - ${formatPrice(firstRange.maxPrice / 100)}`;
+          const lastRange = service.priceRanges[service.priceRanges.length - 1];
+          const overallMax = lastRange.maxPrice ?? lastRange.minPrice;
+          if (overallMax && overallMax !== firstRange.minPrice) {
+            return `${formatPrice(firstRange.minPrice / 100)} – ${formatPrice(overallMax / 100)}`;
           }
           return `From ${formatPrice(firstRange.minPrice / 100)}`;
         }

@@ -138,6 +138,7 @@ export default function BookingPage() {
   const selectedDateParam = searchParams.get("date");
   const selectedTimeParam = searchParams.get("time");
   const totalPriceParam = searchParams.get("totalPrice"); // Dollar amount passed from service page
+  const notesParam = searchParams.get("notes"); // Pre-filled notes (e.g. Property Tours composite details)
   const editId = searchParams.get("edit"); // Booking ID to edit
 
   // Fetch services data
@@ -204,7 +205,7 @@ export default function BookingPage() {
       date: selectedDateParam ? new Date(selectedDateParam) : undefined,
       time: selectedTimeParam || "",
       address: "",
-      notes: "",
+      notes: notesParam ? decodeURIComponent(notesParam) : "",
     },
   });
 

@@ -700,7 +700,11 @@ export default function ServicesManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white">Services Management</h1>
-            <p className="text-gray-400 mt-2">10 canonical drone services across 3 categories — edit details and pricing below</p>
+            <p className="text-gray-400 mt-2">
+              {services
+                ? `${services.length} services across ${new Set(services.map(s => s.category).filter(Boolean)).size} categories — edit details and pricing below`
+                : "Loading services..."}
+            </p>
           </div>
         </div>
 
@@ -1710,7 +1714,8 @@ function ServiceForm({
                     <SelectContent className="bg-gray-800 border-gray-600">
                       <SelectItem value="Real Estate & Marketing">Real Estate &amp; Marketing</SelectItem>
                       <SelectItem value="Property Inspections">Property Inspections</SelectItem>
-                      <SelectItem value="Mapping & Modeling">Mapping &amp; Modeling</SelectItem>
+                      <SelectItem value="Mapping & Site Data">Mapping &amp; Site Data</SelectItem>
+                      <SelectItem value="Construction Lifecycle & 3D Digital Twins">Construction Lifecycle &amp; 3D Digital Twins</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
