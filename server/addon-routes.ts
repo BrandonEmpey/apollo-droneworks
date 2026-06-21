@@ -115,10 +115,14 @@ export function registerAddonRoutes(app: Express) {
   });
 
   // Get addons for a specific service
+  // Public-facing add-on list: only returns is_enabled=true links.
+  // Admin toggle at /api/service-addons (PUT) controls visibility.
+  // Pass ?all=1 (admin only) to include disabled add-ons for the admin panel.
   app.get("/api/services/:serviceId/addons", async (req, res) => {
     try {
       const serviceId = parseInt(req.params.serviceId);
-      
+      const showAll = req.query.all === "1" && (req as any).user?.isAdmin;
+
       const serviceAddonsData = await db
         .select({
           addon: addons,
@@ -126,8 +130,12 @@ export function registerAddonRoutes(app: Express) {
         })
         .from(serviceAddons)
         .innerJoin(addons, eq(serviceAddons.addonId, addons.id))
-        .where(eq(serviceAddons.serviceId, serviceId));
-      
+        .where(
+          showAll
+            ? eq(serviceAddons.serviceId, serviceId)
+            : and(eq(serviceAddons.serviceId, serviceId), eq(serviceAddons.isEnabled, true))
+        );
+
       res.json(serviceAddonsData);
     } catch (error) {
       console.error("Error fetching service addons:", error);

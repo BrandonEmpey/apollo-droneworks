@@ -205,7 +205,7 @@ export default function ServicePage() {
 
   // Property Tours: indoor size + outdoor type selectors
   const [ptIndoorSize, setPtIndoorSize] = useState<'under3k' | 'over3k'>('under3k');
-  const [ptOutdoorType, setPtOutdoorType] = useState<'cinematic' | '3dtwin' | null>(null);
+  const [ptOutdoorType, setPtOutdoorType] = useState<'cinematic' | '3dtwin' | null>('cinematic');
   const [ptCinematicTier, setPtCinematicTier] = useState<number>(0);
   const [ptOutdoorScope, setPtOutdoorScope] = useState<'standard' | 'premium'>('standard');
 
@@ -1038,7 +1038,7 @@ export default function ServicePage() {
                     }
                   }
 
-                  const totalMid = ptOutdoorType ? Math.round((indoorMid + outdoorMid) / 100) : null;
+                  const totalMid = Math.round((indoorMid + outdoorMid) / 100);
 
                   return (
                     <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-4">
@@ -1065,12 +1065,12 @@ export default function ServicePage() {
                       <div>
                         <p className="text-xs font-semibold text-gold mb-2">Outdoor — choose your experience</p>
                         <div className="grid grid-cols-2 gap-2">
-                          <button onClick={() => setPtOutdoorType(ptOutdoorType === 'cinematic' ? null : 'cinematic')}
+                          <button onClick={() => setPtOutdoorType('cinematic')}
                             className={`text-left p-3 rounded-md border transition-all text-xs ${ptOutdoorType === 'cinematic' ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
                             <span className="block font-medium">Cinematic Aerial Video</span>
                             <span className="text-offwhite/50">Stunning aerial footage for MLS &amp; marketing</span>
                           </button>
-                          <button onClick={() => setPtOutdoorType(ptOutdoorType === '3dtwin' ? null : '3dtwin')}
+                          <button onClick={() => setPtOutdoorType('3dtwin')}
                             className={`text-left p-3 rounded-md border transition-all text-xs ${ptOutdoorType === '3dtwin' ? 'border-gold bg-gold/10 text-gold' : 'border-white/20 text-offwhite/70 hover:border-gold/40'}`}>
                             <span className="block font-medium">3D Exterior <DigitalTwinTerm /></span>
                             <span className="text-offwhite/50">Fully navigable 3D model of the exterior</span>
@@ -1114,26 +1114,20 @@ export default function ServicePage() {
                       )}
 
                       {/* Live total */}
-                      <div className={`pt-3 border-t border-gold/20 ${!ptOutdoorType ? 'opacity-50' : ''}`}>
-                        {ptOutdoorType && totalMid ? (
-                          <>
-                            <div className="flex justify-between text-xs text-offwhite/60 mb-1">
-                              <span>Indoor {ptIndoorSize === 'under3k' ? '(under 3k sq ft)' : '(3k–6k sq ft)'}</span>
-                              <span>~${Math.round(indoorMid/100).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-xs text-offwhite/60 mb-2">
-                              <span>Outdoor: {outdoorLabel}</span>
-                              <span>~${Math.round(outdoorMid/100).toLocaleString()}</span>
-                            </div>
-                            <div className="flex justify-between text-sm font-bold text-gold">
-                              <span>Estimated total</span>
-                              <span>~${totalMid.toLocaleString()}</span>
-                            </div>
-                            <p className="text-xs text-offwhite/40 mt-1">Midpoint estimate — final quote confirmed after booking</p>
-                          </>
-                        ) : (
-                          <p className="text-xs text-offwhite/50">Select an outdoor option above to see your estimated total.</p>
-                        )}
+                      <div className="pt-3 border-t border-gold/20">
+                        <div className="flex justify-between text-xs text-offwhite/60 mb-1">
+                          <span>Indoor {ptIndoorSize === 'under3k' ? '(under 3k sq ft)' : '(3k–6k sq ft)'}</span>
+                          <span>~${Math.round(indoorMid/100).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-offwhite/60 mb-2">
+                          <span>Outdoor: {outdoorLabel}</span>
+                          <span>~${Math.round(outdoorMid/100).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-sm font-bold text-gold">
+                          <span>Estimated total</span>
+                          <span>~${Math.round((indoorMid + outdoorMid) / 100).toLocaleString()}</span>
+                        </div>
+                        <p className="text-xs text-offwhite/40 mt-1">Midpoint estimate — final quote confirmed after booking</p>
                       </div>
                     </div>
                   );
@@ -1767,10 +1761,6 @@ export default function ServicePage() {
 
                   // Property Tours composite: compute total from selected indoor+outdoor and navigate
                   if (service?.pricingType === "composite") {
-                    if (!ptOutdoorType) {
-                      toast({ title: "Select an outdoor option", description: "Choose Cinematic Aerial Video or 3D Exterior Digital Twin to continue.", variant: "destructive" });
-                      return;
-                    }
                     const dtSvc = services?.find(s => s.name === "3D Digital Twin");
                     const relSvc = services?.find(s => s.name === "Real Estate Listings");
                     const dtTiers: any[] = dtSvc?.pricingTiers ?? [];

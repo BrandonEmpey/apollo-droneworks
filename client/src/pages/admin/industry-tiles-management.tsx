@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { IndustryTile, Service } from "@shared/schema";
 
-const VALID_CATEGORIES = ["Real Estate & Marketing", "Property Inspections", "Mapping & Modeling"] as const;
+const VALID_CATEGORIES = ["Real Estate & Marketing", "Property Inspections", "Mapping & Site Data", "Construction Lifecycle & 3D Digital Twins"] as const;
 
 interface TileFormData {
   slug: string;

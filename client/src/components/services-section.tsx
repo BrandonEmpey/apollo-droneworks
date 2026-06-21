@@ -3,7 +3,12 @@ import { Service } from "@shared/schema";
 import { ServiceCard } from "@/components/ui/service-card";
 import { Loader2 } from "lucide-react";
 
-const CATEGORY_ORDER = ["Real Estate & Marketing", "Property Inspections", "Mapping & Modeling"];
+const CATEGORY_ORDER = [
+  "Real Estate & Marketing",
+  "Property Inspections",
+  "Mapping & Site Data",
+  "Construction Lifecycle & 3D Digital Twins",
+];
 
 export function ServicesSection() {
   const {

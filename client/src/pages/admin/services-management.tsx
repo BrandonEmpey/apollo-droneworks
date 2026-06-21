@@ -731,7 +731,7 @@ export default function ServicesManagement() {
         </div>
 
         {/* Services grouped by category */}
-        {["Real Estate & Marketing", "Property Inspections", "Mapping & Modeling"].map((category) => (
+        {["Real Estate & Marketing", "Property Inspections", "Mapping & Site Data", "Construction Lifecycle & 3D Digital Twins"].map((category) => (
           <div key={category} className="space-y-4">
             <h2 className="text-xl font-semibold text-gold border-b border-gold/30 pb-2">{category}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

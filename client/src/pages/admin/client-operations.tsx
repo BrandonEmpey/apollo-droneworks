@@ -27,7 +27,7 @@ const TAB_PATHS: Record<TabValue, string> = {
   "client-portal": "/admin/client-portal",
 };
 
-const SERVICE_CATEGORIES = ["Real Estate & Marketing", "Property Inspections", "Mapping & Modeling"] as const;
+const SERVICE_CATEGORIES = ["Real Estate & Marketing", "Property Inspections", "Mapping & Site Data", "Construction Lifecycle & 3D Digital Twins"] as const;
 
 function getActiveTabFromPath(pathname: string): TabValue {
   if (pathname.startsWith("/admin/bookings")) return "bookings";
