@@ -219,9 +219,6 @@ export default function ServicePage() {
 
   // Foundation to Finish: selected entry-point index (0=bare ground, 1=framing, 2=completion, 3=finish)
   const [f2fStartPhase, setF2fStartPhase] = useState<number | null>(null);
-  // Accordion open phase (1–6); null = all collapsed
-  const [f2fOpenPhase, setF2fOpenPhase] = useState<number | null>(null);
-
   // Construction Monitoring: style + tier (default to 'progress' so price is visible on load)
   const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse'>('progress');
   const [cmTier, setCmTier] = useState<'standard' | 'premium'>('standard');
@@ -719,6 +716,113 @@ export default function ServicePage() {
             );
             })()}
 
+            {/* Foundation to Finish: Entry-Point Package Cards + Phase Reference */}
+            {service.name === "Foundation to Finish" && (() => {
+              const tiers: any[] = (service.pricingTiers as any[]) ?? [];
+              const F2F_BULLETS = [
+                "Bare Ground Mapping",
+                "Rough-In Digital Twin",
+                "Aerial Photo & Video",
+                "Exterior Digital Twin",
+                "Interior Digital Twin",
+                "Combined Project Archive",
+              ];
+              const entryPoints = [
+                { label: "Bare ground / not yet started",                     phases: [1,2,3,4,5,6], disc: BUNDLE_DISC,          bullets: [0,1,2,3,4,5] },
+                { label: "Foundation/framing underway, rough-in still ahead", phases: [2,3,4,5,6],   disc: F2F_DISC_FRAMING,    bullets: [1,2,3,4,5] },
+                { label: "Rough-in already passed, nothing captured yet",     phases: [3,4,5,6],     disc: F2F_DISC_COMPLETION, bullets: [2,3,4,5] },
+                { label: "Build finished, just want the twin",                phases: [4,5,6],       disc: F2F_DISC_FINISH,     bullets: [3,4,5] },
+              ];
+              const phaseRef = [
+                { n: 1, title: "Initial Aerial Mapping of the Bare Ground Site",        desc: "A georeferenced aerial map of the undisturbed lot, establishing the baseline elevation, contours, and site reference data before any construction begins." },
+                { n: 2, title: "Full Digital Twin at the Rough-In / Pre-Drywall Stage", desc: "A complete indoor and outdoor 3D Digital Twin captured at the moment every pipe, wire, and duct is visible for the last time before drywall closes the walls." },
+                { n: 3, title: "Aerial Photography & Video at Project Completion",       desc: "Professional aerial stills and video of the finished property, suitable for marketing, listings, and social content." },
+                { n: 4, title: "Full Exterior Digital Twin of the Finished Property",    desc: "A photorealistic, navigable 3D Digital Twin of the completed exterior, structure, and grounds." },
+                { n: 5, title: "Full Interior Digital Twin of the Finished Property",    desc: "A photorealistic, navigable 3D Digital Twin of every finished interior space." },
+                { n: 6, title: "Full Project Archive including Combined Digital Twin",   desc: "The complete project deliverable: exterior and interior Digital Twins linked into one experience, plus a chronological archive of all documentation from groundbreaking through completion." },
+              ];
+              return (
+                <>
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-bold text-gold-gradient mb-6">What Stage is Your Project In?</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {entryPoints.map((ep, i) => {
+                        const subtotal = ep.phases.reduce((sum, p) => {
+                          const t = tiers.find((t: any) => Number(t.phase) === p);
+                          return sum + (t?.price ?? 0);
+                        }, 0);
+                        const discounted = Math.round(subtotal * (1 - ep.disc / 100));
+                        const isSelected = f2fStartPhase === i;
+                        return (
+                          <div
+                            key={i}
+                            className={`p-[1px] rounded-xl transition-all duration-300 ${isSelected ? 'shadow-lg shadow-gold/30' : 'hover:shadow-md hover:shadow-gold/20'}`}
+                            style={{ background: 'linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end))' }}
+                          >
+                            <div className={`p-5 rounded-[11px] h-full flex flex-col gap-4 transition-all duration-300 ${isSelected ? 'bg-gold/10' : 'bg-[#080d17]'}`}>
+                              <h3 className={`text-sm font-semibold leading-snug ${isSelected ? 'text-gold' : 'text-offwhite'}`}>{ep.label}</h3>
+                              <div>
+                                <div className="flex items-baseline gap-2 flex-wrap">
+                                  <span className="text-2xl font-bold text-gold-gradient">${Math.round(discounted/100).toLocaleString()}</span>
+                                  {ep.disc > 0 && (
+                                    <span className="text-sm text-offwhite/40 line-through">${Math.round(subtotal/100).toLocaleString()}</span>
+                                  )}
+                                  {ep.disc > 0 && (
+                                    <span className="text-xs text-emerald-400">{ep.disc}% off</span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-offwhite/40 mt-0.5">Standard tier · Premium pricing available</p>
+                              </div>
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 flex-1">
+                                {ep.bullets.map((bi) => (
+                                  <div key={bi} className="flex items-center gap-1.5 min-w-0">
+                                    <span className="text-gold text-[10px] leading-none flex-shrink-0">✓</span>
+                                    <span className="text-[11px] text-offwhite/80 leading-tight truncate">{F2F_BULLETS[bi]}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <Button
+                                className={`w-full text-sm transition-all ${isSelected ? 'bg-gold text-black hover:bg-gold/90' : 'bg-transparent border border-gold text-gold hover:bg-gold hover:text-black'}`}
+                                onClick={() => {
+                                  setF2fStartPhase(i);
+                                  if (!user) {
+                                    toast({ title: "Login Required", description: "Please log in to book a service." });
+                                    return;
+                                  }
+                                  const cmExtra = bundlePricing.bundleServices.reduce((s, b) => s + b.bundlePrice, 0);
+                                  const totalDollars = Math.round((discounted + cmExtra) / 100);
+                                  window.location.href = `/booking?service=${service.id}&totalPrice=${totalDollars}`;
+                                }}
+                              >
+                                <Calendar className="w-4 h-4 mr-2" />
+                                Get Started
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-base font-semibold text-offwhite/60 mb-3">What Each Phase Covers</h3>
+                    <div className="space-y-2.5 rounded-lg bg-[#080d17]/40 border border-white/10 p-4">
+                      {phaseRef.map(ph => (
+                        <div key={ph.n} className="flex gap-3 items-start">
+                          <span className="text-gold text-xs font-semibold flex-shrink-0 w-14 pt-px">Phase {ph.n}</span>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-medium text-offwhite/70">{ph.title}</span>
+                            <span className="text-offwhite/30"> — </span>
+                            <span className="text-xs text-offwhite/40">{ph.desc}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+
             {/* Recommended Bundles - Moved from sidebar */}
             {services && service && (
               <div className="mb-8">
@@ -750,7 +854,7 @@ export default function ServicePage() {
 
                         // Foundation to Finish: fixed set including Construction Monitoring
                         if (isF2F) {
-                          return ["3D Digital Twin", "Rough-In Digital Twin", "Real Estate Listings", "Construction Monitoring / Timelapse"].includes(s.name);
+                          return ["Real Estate Listings", "Property Tours", "Promotional Content", "Construction Monitoring / Timelapse"].includes(s.name);
                         }
                         // Aerial Mapping pairs with all other services
                         if (isAerialMapping) return AERIAL_MAPPING_SAVINGS[s.name] !== undefined;
@@ -993,46 +1097,25 @@ export default function ServicePage() {
                   );
                 })()}
 
-                {/* ── Foundation to Finish: entry-point selector ───────────── */}
+                {/* ── Foundation to Finish: selected package summary ───────────── */}
                 {service.name === "Foundation to Finish" && (() => {
-                  const tiers: any[] = (service.pricingTiers as any[]) ?? [];
-                  const entryPoints = [
-                    { label: "Bare ground / not yet started",                      desc: "All 6 phases from the very beginning", phases: [1,2,3,4,5,6], disc: BUNDLE_DISC },
-                    { label: "Foundation/framing underway, rough-in still ahead",  desc: "Phases 2–6, starting at the rough-in capture", phases: [2,3,4,5,6], disc: F2F_DISC_FRAMING },
-                    { label: "Rough-in already passed, nothing captured yet",      desc: "Phases 3–6, from completion marketing onward", phases: [3,4,5,6],   disc: F2F_DISC_COMPLETION },
-                    { label: "Build finished, just want the twin",                 desc: "Phases 4–6, Digital Twin of the finished property", phases: [4,5,6], disc: F2F_DISC_FINISH },
+                  const epLabels = [
+                    "Bare ground / not yet started",
+                    "Foundation/framing underway, rough-in still ahead",
+                    "Rough-in already passed, nothing captured yet",
+                    "Build finished, just want the twin",
                   ];
                   return (
-                    <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4 space-y-3">
-                      <p className="text-sm font-semibold text-offwhite/90">What Stage is Your Project In?</p>
-                      <div className="space-y-2">
-                        {entryPoints.map((ep, i) => {
-                          const subtotal = ep.phases.reduce((sum, p) => {
-                            const t = tiers.find((t: any) => Number(t.phase) === p);
-                            return sum + (t?.price ?? 0);
-                          }, 0);
-                          const discounted = Math.round(subtotal * (1 - ep.disc / 100));
-                          const isSelected = f2fStartPhase === i;
-                          return (
-                            <button key={i} onClick={() => setF2fStartPhase(isSelected ? null : i)}
-                              className={`w-full text-left p-3 rounded-md border transition-all ${isSelected ? 'border-gold bg-gold/10' : 'border-white/20 hover:border-gold/40'}`}>
-                              <div className="flex justify-between items-center">
-                                <div>
-                                  <span className={`text-sm font-semibold ${isSelected ? 'text-gold' : 'text-offwhite'}`}>{ep.label}</span>
-                                  <p className="text-xs text-offwhite/60 mt-0.5">{ep.desc}</p>
-                                </div>
-                                <div className="text-right shrink-0 ml-3">
-                                  <p className="text-sm font-bold text-gold">${Math.round(discounted/100).toLocaleString()}</p>
-                                  {ep.disc > 0 && (
-                                    <p className="text-xs text-offwhite/40 line-through">${Math.round(subtotal/100).toLocaleString()}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                      <p className="text-xs text-emerald-400">Save up to 25% — the discount scales with how early you start. Prices shown are Standard tier.</p>
+                    <div className="mb-4 rounded-lg border border-gold/20 bg-[#080d17]/60 p-4">
+                      {f2fStartPhase !== null ? (
+                        <div>
+                          <p className="text-xs text-offwhite/50 mb-1">Selected package</p>
+                          <p className="text-sm font-semibold text-gold leading-snug">{epLabels[f2fStartPhase]}</p>
+                          <p className="text-xs text-emerald-400 mt-2">Save up to 25% — discount scales with how early you start.</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-offwhite/50 text-center py-1">Choose a package above to see your total.</p>
+                      )}
                     </div>
                   );
                 })()}
@@ -1203,55 +1286,7 @@ export default function ServicePage() {
                   );
                 })()}
 
-                {/* Foundation to Finish: Phase accordion (no individual booking) */}
-                {service.name === "Foundation to Finish" ? (
-                  (() => {
-                    const tiers: any[] = (service.pricingTiers as any[]) ?? [];
-                    const phases = [
-                      { n: 1, title: "Initial Aerial Mapping of the Bare Ground Site",        detail: "Georeferenced orthomosaic of the raw lot, baseline elevation and contour data, and a baseline point cloud — your project's starting reference point." },
-                      { n: 2, title: "Full Digital Twin at the Rough-In / Pre-Drywall Stage", detail: "A combined indoor + outdoor Digital Twin of the property at the rough-in / pre-drywall stage — the same capture as the standalone Rough-In Digital Twin product." },
-                      { n: 3, title: "Aerial Photography & Video at Project Completion",      detail: "A finished-property aerial photo and video package, equivalent to the Real Estate Listings service." },
-                      { n: 4, title: "Full Exterior Digital Twin of the Finished Property",   detail: "A full exterior Digital Twin of the completed property and lot." },
-                      { n: 5, title: "Full Interior Digital Twin of the Finished Property",   detail: "A full interior Digital Twin of the completed property." },
-                      { n: 6, title: "Full Project Archive including Combined Digital Twin",  detail: "Interior and exterior twins linked into one combined presentation, the complete project archive organized chronologically, and a bonus project story video assembled from the documentation footage." },
-                    ];
-                    return (
-                      <div className="space-y-2">
-                        <p className="text-xs text-offwhite/50 mb-3">Click any phase to see what it delivers.</p>
-                        {phases.map(ph => {
-                          const t = tiers.find((t: any) => Number(t.phase) === ph.n);
-                          const price = t?.price ?? 0;
-                          const isOpen = f2fOpenPhase === ph.n;
-                          return (
-                            <div key={ph.n} className="rounded-md border border-white/15 overflow-hidden">
-                              <button
-                                className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
-                                onClick={() => setF2fOpenPhase(isOpen ? null : ph.n)}
-                              >
-                                <span className="text-sm text-offwhite/80 pr-2">
-                                  <span className="text-gold font-semibold">Phase {ph.n}</span>
-                                  {" — "}
-                                  {ph.title}
-                                </span>
-                                <span className="text-xs font-semibold text-gold shrink-0">
-                                  {price > 0 ? `$${Math.round(price/100).toLocaleString()}` : ""}
-                                </span>
-                              </button>
-                              {isOpen && (
-                                <div className="px-3 pb-3 pt-1 border-t border-white/10 bg-white/3">
-                                  <p className="text-xs text-offwhite/60 leading-relaxed">{ph.detail}</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                        <p className="text-center text-gray-400 text-xs pt-1">
-                          Custom packages available — <Link href="/contact" className="text-gold hover:underline">contact for quote</Link>
-                        </p>
-                      </div>
-                    );
-                  })()
-                ) : service.pricingType !== "composite" && service.pricingTiers && service.pricingTiers.length > 0 ? (
+                {service.name === "Foundation to Finish" ? null : service.pricingType !== "composite" && service.pricingTiers && service.pricingTiers.length > 0 ? (
                   <div className="space-y-4">
                     {service.pricingTiers.map((tier: any, index: number) => {
                       const isPopular = tier.isPopular;
