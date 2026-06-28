@@ -219,6 +219,8 @@ export default function ServicePage() {
 
   // Foundation to Finish: selected entry-point index (0=bare ground, 1=framing, 2=completion, 3=finish)
   const [f2fStartPhase, setF2fStartPhase] = useState<number | null>(null);
+  const [f2fPricingTier, setF2fPricingTier] = useState<'standard' | 'premium'>('standard');
+  const [f2fPulsingCard, setF2fPulsingCard] = useState<number | null>(null);
   // Construction Monitoring: style + tier (default to 'progress' so price is visible on load)
   const [cmStyle, setCmStyle] = useState<'progress' | 'timelapse'>('progress');
   const [cmTier, setCmTier] = useState<'standard' | 'premium'>('standard');
@@ -265,10 +267,28 @@ export default function ServicePage() {
     const rates = [BUNDLE_DISC, F2F_DISC_FRAMING, F2F_DISC_COMPLETION, F2F_DISC_FINISH];
     return Math.round(subtotal * (1 - (rates[f2fStartPhase] ?? 0) / 100));
   }, [service, f2fStartPhase, bundleConfig]);
-  
+
+  // Premium prices per entry point (cents): Bare Ground, Foundation/Framing, Rough-In Passed, Build Finished
+  const F2F_PREMIUM_PRICES = [393800, 378300, 303600, 285000];
+
+  const f2fAllStandardPrices = useMemo((): number[] => {
+    if (service?.name !== "Foundation to Finish") return [0, 0, 0, 0];
+    const tiers: any[] = (service.pricingTiers as any[]) ?? [];
+    const phaseSets = [[1,2,3,4,5,6],[2,3,4,5,6],[3,4,5,6],[4,5,6]];
+    const rates = [BUNDLE_DISC, F2F_DISC_FRAMING, F2F_DISC_COMPLETION, F2F_DISC_FINISH];
+    return phaseSets.map((phases, i) => {
+      const subtotal = phases.reduce((sum, p) => {
+        const t = tiers.find((t: any) => Number(t.phase) === p);
+        return sum + (t?.price ?? 0);
+      }, 0);
+      return Math.round(subtotal * (1 - (rates[i] ?? 0) / 100));
+    });
+  }, [service, bundleConfig]);
+
   // Refs for pricing tiers and bundle areas to handle click outside
   const pricingTiersRef = useRef<HTMLDivElement>(null);
   const bundleAreaRef = useRef<HTMLDivElement>(null);
+  const f2fCardRefs = useRef<(HTMLDivElement | null)[]>([null, null, null, null]);
   
   // Handle click outside pricing tiers to deselect (but not when clicking bundles)
   useEffect(() => {
@@ -625,11 +645,11 @@ export default function ServicePage() {
             )}
 
             {/* Service Features */}
-            {(() => {
+            {service.name !== "Foundation to Finish" && (() => {
               const selectedTier = service.pricingTiers && service.pricingTiers.length > 0 && selectedPricingTier !== null
                 ? service.pricingTiers[selectedPricingTier]
                 : null;
-              
+
               const baseFeatures = service.features || [];
               const packageFeatures = selectedTier?.features && selectedTier.features.length > 0 
                 ? selectedTier.features.filter((f: string) => !baseFeatures.includes(f))
@@ -756,11 +776,16 @@ export default function ServicePage() {
                         return (
                           <div
                             key={i}
-                            className={`p-[1px] rounded-xl transition-all duration-300 ${isSelected ? 'shadow-lg shadow-gold/30' : 'hover:shadow-md hover:shadow-gold/20'}`}
-                            style={{ background: 'linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end))' }}
+                            ref={el => { f2fCardRefs.current[i] = el; }}
+                            className={`rounded-xl transition-all duration-300 cursor-pointer ${isSelected ? 'shadow-lg shadow-gold/30' : 'hover:shadow-md hover:shadow-gold/20'} ${f2fPulsingCard === i ? 'ring-2 ring-gold/60 ring-offset-1 ring-offset-[#080d17]' : ''}`}
+                            style={{
+                              background: 'linear-gradient(90deg, var(--gold-start), var(--gold-middle), var(--gold-end))',
+                              padding: isSelected ? '1px 1px 1px 4px' : '1px',
+                            }}
+                            onClick={() => setF2fStartPhase(i)}
                           >
-                            <div className={`p-5 rounded-[11px] h-full flex flex-col gap-4 transition-all duration-300 ${isSelected ? 'bg-gold/10' : 'bg-[#080d17]'}`}>
-                              <h3 className={`text-sm font-semibold leading-snug ${isSelected ? 'text-gold' : 'text-offwhite'}`}>{ep.label}</h3>
+                            <div className={`p-5 rounded-[10px] h-full flex flex-col gap-4 transition-all duration-300 ${isSelected ? 'bg-[#0d1a2e]' : 'bg-[#080d17]'}`}>
+                              <h3 className="text-sm font-semibold leading-snug text-offwhite">{ep.label}</h3>
                               <div>
                                 <div className="flex items-baseline gap-2 flex-wrap">
                                   <span className="text-2xl font-bold text-gold-gradient">${Math.round(discounted/100).toLocaleString()}</span>
@@ -781,22 +806,6 @@ export default function ServicePage() {
                                   </div>
                                 ))}
                               </div>
-                              <Button
-                                className={`w-full text-sm transition-all ${isSelected ? 'bg-gold text-black hover:bg-gold/90' : 'bg-transparent border border-gold text-gold hover:bg-gold hover:text-black'}`}
-                                onClick={() => {
-                                  setF2fStartPhase(i);
-                                  if (!user) {
-                                    toast({ title: "Login Required", description: "Please log in to book a service." });
-                                    return;
-                                  }
-                                  const cmExtra = bundlePricing.bundleServices.reduce((s, b) => s + b.bundlePrice, 0);
-                                  const totalDollars = Math.round((discounted + cmExtra) / 100);
-                                  window.location.href = `/booking?service=${service.id}&totalPrice=${totalDollars}`;
-                                }}
-                              >
-                                <Calendar className="w-4 h-4 mr-2" />
-                                Get Started
-                              </Button>
                             </div>
                           </div>
                         );
@@ -1023,6 +1032,121 @@ export default function ServicePage() {
 
           {/* Packages & Pricing Sidebar */}
           <div className="lg:col-span-1">
+            {service.name === "Foundation to Finish" ? (
+              <div className="lg:sticky lg:top-4">
+                <div className="bg-black-light rounded-lg p-6 border border-white/50">
+                  <h3 className="text-xl font-semibold font-montserrat text-gold-gradient mb-4 text-center">
+                    Select Your Starting Point
+                  </h3>
+
+                  {/* Compact package selector buttons */}
+                  <div className="space-y-2 mb-5">
+                    {[
+                      { label: "Bare Ground",        idx: 0, disc: BUNDLE_DISC },
+                      { label: "Foundation/Framing", idx: 1, disc: F2F_DISC_FRAMING },
+                      { label: "Rough-In Passed",    idx: 2, disc: F2F_DISC_COMPLETION },
+                      { label: "Build Finished",     idx: 3, disc: F2F_DISC_FINISH },
+                    ].map(({ label, idx, disc }) => {
+                      const priceCents = f2fPricingTier === 'standard'
+                        ? f2fAllStandardPrices[idx]
+                        : F2F_PREMIUM_PRICES[idx];
+                      const isSel = f2fStartPhase === idx;
+                      return (
+                        <div key={idx}>
+                          <button
+                            className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-all ${
+                              isSel
+                                ? 'border-gold bg-[#0d1a2e]'
+                                : 'border-white/20 bg-[#080d17] hover:border-gold/50'
+                            }`}
+                            onClick={() => setF2fStartPhase(idx)}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`font-semibold text-sm truncate ${isSel ? 'text-gold' : 'text-offwhite'}`}>{label}</span>
+                                {disc > 0 && (
+                                  <span className="text-xs bg-emerald-400/15 text-emerald-400 px-1.5 py-0.5 rounded flex-shrink-0">{disc}% off</span>
+                                )}
+                              </div>
+                              <span className={`font-bold text-sm flex-shrink-0 ${isSel ? 'text-white' : 'text-gold'}`}>
+                                ${Math.round(priceCents / 100).toLocaleString()}
+                              </span>
+                            </div>
+                          </button>
+                          <button
+                            className="text-[11px] text-gold/50 hover:text-gold/90 mt-1 ml-1 transition-colors"
+                            onClick={() => {
+                              const el = f2fCardRefs.current[idx];
+                              if (el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                setF2fPulsingCard(idx);
+                                setTimeout(() => setF2fPulsingCard(null), 700);
+                              }
+                            }}
+                          >
+                            ↓ See details
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Standard / Premium toggle */}
+                  <div className="flex gap-1 mb-5 p-1 bg-[#080d17] rounded-lg border border-white/10">
+                    {(['standard', 'premium'] as const).map(tier => (
+                      <button
+                        key={tier}
+                        onClick={() => setF2fPricingTier(tier)}
+                        className={`flex-1 py-1.5 rounded-md text-xs font-medium capitalize transition-all ${
+                          f2fPricingTier === tier
+                            ? 'bg-gold text-black'
+                            : 'text-offwhite/60 hover:text-offwhite'
+                        }`}
+                      >
+                        {tier}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Total */}
+                  <div className="border-t border-offwhite/10 pt-4 mb-4">
+                    {f2fStartPhase !== null ? (
+                      <div className="flex justify-between items-center">
+                        <span className="text-lg font-medium text-gold-gradient">Total:</span>
+                        <span className="text-xl font-bold text-gold-gradient">
+                          {formatPrice((f2fPricingTier === 'standard' ? f2fAllStandardPrices[f2fStartPhase] : F2F_PREMIUM_PRICES[f2fStartPhase]) / 100)}
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-offwhite/50 text-center py-2">Select a package to see your total</p>
+                    )}
+                  </div>
+
+                  {/* Book Service */}
+                  <Button
+                    className={`w-full font-medium ${f2fStartPhase !== null ? 'bg-gold hover:bg-gold/90 text-black' : 'bg-offwhite/20 text-offwhite/40 cursor-not-allowed'}`}
+                    disabled={f2fStartPhase === null}
+                    onClick={() => {
+                      if (f2fStartPhase === null) return;
+                      if (!user) {
+                        toast({ title: "Login Required", description: "Please log in to book a service." });
+                        return;
+                      }
+                      const baseCents = f2fPricingTier === 'standard' ? f2fAllStandardPrices[f2fStartPhase] : F2F_PREMIUM_PRICES[f2fStartPhase];
+                      const cmExtra = bundlePricing.bundleServices.reduce((s, b) => s + b.bundlePrice, 0);
+                      const totalDollars = Math.round((baseCents + cmExtra) / 100);
+                      toast({ title: "Booking Initiated", description: `Starting booking for Foundation to Finish. Redirecting…` });
+                      setTimeout(() => {
+                        window.location.href = `/booking?service=${service.id}&totalPrice=${totalDollars}`;
+                      }, 1000);
+                    }}
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Book Service
+                  </Button>
+                </div>
+              </div>
+            ) : (
             <div className="lg:sticky lg:top-4">
             <div className="bg-black-light rounded-lg p-6 border border-white/50 mb-6">
               <h3 className="text-xl font-semibold font-montserrat text-gold-gradient mb-4 text-center">
@@ -1976,6 +2100,7 @@ export default function ServicePage() {
               </Button>
             </div>
             </div>{/* /lg:sticky */}
+            )}
           </div>
         </div>
       </div>
